@@ -3,7 +3,12 @@ import { FullScreenStatus } from '../components/routing/FullScreenStatus'
 import { Button } from '../components/ui/Button'
 import { useAuth } from '../hooks/useAuth'
 import { signOut } from '../services/authService'
-import { fetchGames, fetchTagVocabulary, saveMyPreferences } from '../services/preferencesService'
+import {
+  fetchGames,
+  fetchGenres,
+  fetchTagVocabulary,
+  saveMyPreferences,
+} from '../services/preferencesService'
 import { GameStep } from './onboarding/GameStep'
 import { TagStep } from './onboarding/TagStep'
 import { TimeStep } from './onboarding/TimeStep'
@@ -12,18 +17,15 @@ import styles from './onboarding/Onboarding.module.css'
 const STEPS = [
   {
     title: '어떤 게임을 하세요?',
-    description: '하는 게임을 모두 골라 주세요. 같은 게임을 하는 사람을 먼저 추천해요.',
-    requirement: '게임을 1개 이상 골라 주세요',
+    description: '하는 게임을 모두 골라 주세요. 목록에 없으면 검색해서 추가를 요청할 수 있어요.',
   },
   {
     title: '어떻게 플레이하세요?',
-    description: '플레이 스타일이 맞는 사람일수록 궁합 점수가 높아져요.',
-    requirement: '플레이 스타일을 1개 이상 골라 주세요',
+    description: '장르와 플레이 스타일이 맞는 사람일수록 궁합 점수가 높아져요.',
   },
   {
     title: '주로 언제 접속하세요?',
     description: '평일과 주말을 나눠 골라 주세요. 접속 시간이 겹치는 사람을 추천해요.',
-    requirement: '접속 시간을 1칸 이상 골라 주세요',
   },
 ]
 
@@ -36,9 +38,11 @@ function toggleInSet(set, value) {
 
 export function Onboarding() {
   const { profile, refreshProfile } = useAuth()
-  const [data, setData] = useState({ status: 'loading', games: [], vocabulary: [] })
+  const [data, setData] = useState({ status: 'loading', games: [], genres: [], vocabulary: [] })
   const [step, setStep] = useState(0)
   const [gameIds, setGameIds] = useState(() => new Set())
+  const [requestedGames, setRequestedGames] = useState([])
+  const [genreIds, setGenreIds] = useState(() => new Set())
   const [tags, setTags] = useState(() => new Set())
   const [hours, setHours] = useState(() => ({ weekday: new Set(), weekend: new Set() }))
   const [isSaving, setIsSaving] = useState(false)
@@ -52,9 +56,9 @@ export function Onboarding() {
 
   useEffect(() => {
     let isStale = false
-    Promise.all([fetchGames(), fetchTagVocabulary()]).then(
-      ([games, vocabulary]) => {
-        if (!isStale) setData({ status: 'ready', games, vocabulary })
+    Promise.all([fetchGames(), fetchGenres(), fetchTagVocabulary()]).then(
+      ([games, genres, vocabulary]) => {
+        if (!isStale) setData({ status: 'ready', games, genres, vocabulary })
       },
       () => {
         if (!isStale) setData((prev) => ({ ...prev, status: 'error' }))
@@ -90,13 +94,25 @@ export function Onboarding() {
     )
   }
 
-  const isStepValid = [
-    gameIds.size > 0,
-    data.vocabulary.some((item) => item.category === 'style' && tags.has(item.tag)),
-    hours.weekday.size + hours.weekend.size > 0,
+  const hasStyleTag = data.vocabulary.some(
+    (item) => item.category === 'style' && tags.has(item.tag),
+  )
+  // 단계별로 아직 채우지 않은 필수 항목 안내. null이면 다음으로 갈 수 있다.
+  const requirement = [
+    gameIds.size + requestedGames.length === 0
+      ? '게임을 1개 이상 고르거나 추가 요청해 주세요'
+      : null,
+    genreIds.size === 0
+      ? '좋아하는 장르를 1개 이상 골라 주세요'
+      : !hasStyleTag
+        ? '플레이 스타일을 1개 이상 골라 주세요'
+        : null,
+    hours.weekday.size + hours.weekend.size === 0 ? '접속 시간을 1칸 이상 골라 주세요' : null,
   ][step]
+  const isStepValid = requirement === null
   const isLastStep = step === STEPS.length - 1
   const current = STEPS[step]
+  const genreNameById = new Map(data.genres.map((genre) => [genre.id, genre.name]))
 
   async function handleSubmit() {
     // 게임 선택을 바꾸면 빠진 게임의 콘텐츠 태그가 남아 있을 수 있어 저장 직전에 걸러 낸다.
@@ -110,6 +126,8 @@ export function Onboarding() {
     try {
       await saveMyPreferences({
         gameIds: [...gameIds],
+        requestedGames,
+        genreIds: [...genreIds],
         tags: savedTags,
         weekdayHours: [...hours.weekday],
         weekendHours: [...hours.weekend],
@@ -123,8 +141,18 @@ export function Onboarding() {
   }
 
   function handleNext() {
-    if (isLastStep) handleSubmit()
-    else setStep(step + 1)
+    if (isLastStep) {
+      handleSubmit()
+      return
+    }
+    // 장르를 아직 안 골랐다면 고른 게임의 장르를 미리 선택해 둔다. 사용자가 바로 고칠 수 있다.
+    if (step === 0 && genreIds.size === 0) {
+      const gameGenres = data.games
+        .filter((game) => gameIds.has(game.id) && game.genre_id)
+        .map((game) => game.genre_id)
+      setGenreIds(new Set(gameGenres))
+    }
+    setStep(step + 1)
   }
 
   return (
@@ -191,16 +219,25 @@ export function Onboarding() {
           {step === 0 && (
             <GameStep
               games={data.games}
+              genreNameById={genreNameById}
               selectedIds={gameIds}
+              requestedGames={requestedGames}
               onToggle={(id) => setGameIds((prev) => toggleInSet(prev, id))}
+              onRequest={(name) => setRequestedGames((prev) => [...prev, name])}
+              onRemoveRequest={(name) =>
+                setRequestedGames((prev) => prev.filter((item) => item !== name))
+              }
             />
           )}
           {step === 1 && (
             <TagStep
+              genres={data.genres}
+              selectedGenreIds={genreIds}
+              onToggleGenre={(id) => setGenreIds((prev) => toggleInSet(prev, id))}
               vocabulary={data.vocabulary}
               selectedGameIds={gameIds}
               selectedTags={tags}
-              onToggle={(tag) => setTags((prev) => toggleInSet(prev, tag))}
+              onToggleTag={(tag) => setTags((prev) => toggleInSet(prev, tag))}
             />
           )}
           {step === 2 && (
@@ -220,7 +257,7 @@ export function Onboarding() {
               {saveError}
             </p>
           )}
-          {!isStepValid && <p className={styles.requirement}>{current.requirement}</p>}
+          {requirement && <p className={styles.requirement}>{requirement}</p>}
           <Button
             className={styles.nextButton}
             onClick={handleNext}

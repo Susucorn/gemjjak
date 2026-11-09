@@ -32,12 +32,13 @@
 
 .mark {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  color: rgb(255 255 255 / 92%);
-  font-size: 28px;
+  bottom: 8px;
+  left: 10px;
+  color: rgb(255 255 255 / 95%);
+  font-size: 24px;
+  font-weight: 700;
   line-height: 1;
-  transform: translate(-50%, -50%);
+  text-shadow: 0 1px 4px rgb(0 0 0 / 15%);
 }
 
 .sky {
@@ -58,6 +59,22 @@
 
 .mint {
   background: linear-gradient(135deg, #6fe0c4, #2a9d8f);
+}
+
+.amber {
+  background: linear-gradient(135deg, #ffb36b, #e8742e);
+}
+
+.coral {
+  background: linear-gradient(135deg, #ff9f80, #d9534f);
+}
+
+.teal {
+  background: linear-gradient(135deg, #5fd3e0, #1f8a9e);
+}
+
+.green {
+  background: linear-gradient(135deg, #8bd17c, #3c9a4a);
 }
 
 .violet {
