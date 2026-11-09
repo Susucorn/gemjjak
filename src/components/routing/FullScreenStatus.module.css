@@ -1,0 +1,11 @@
+.status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  min-height: 100dvh;
+  padding: var(--space-4);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
