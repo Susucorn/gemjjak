@@ -51,9 +51,15 @@ create table public.servers (
   name text not null,
   game_id bigint references public.games (id) on delete set null,
   description text,
-  invite_url text not null,
+  invite_url text not null unique
+    check (invite_url ~ '^https://(discord\.gg|discord\.com/invite)/[A-Za-z0-9-]+$'),
   member_count integer not null default 0 check (member_count >= 0),
-  online_count integer not null default 0 check (online_count >= 0)
+  online_count integer not null default 0 check (online_count >= 0),
+  -- 사용자가 프로필에서 등록한 서버는 owner_id가 있고, 관리자가 넣은 서버는 null이다.
+  owner_id uuid references public.profiles (id) on delete cascade,
+  -- 사용자가 등록하면 pending, 관리자가 대시보드에서 approved로 바꿔야 공개된다.
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  created_at timestamptz not null default now()
 );
 
 create table public.chat_rooms (
@@ -87,6 +93,7 @@ create index profiles_tags_idx on public.profiles using gin (tags);
 create index user_games_game_id_idx on public.user_games (game_id);
 create index availability_slot_idx on public.availability (weekday, start_hour, end_hour);
 create index servers_game_id_idx on public.servers (game_id);
+create index servers_owner_id_idx on public.servers (owner_id);
 create index chat_members_user_id_idx on public.chat_members (user_id);
 create index messages_room_created_idx on public.messages (room_id, created_at);
 
@@ -172,8 +179,47 @@ create policy "games_select" on public.games
   for select to authenticated using (true);
 create policy "tag_vocabulary_select" on public.tag_vocabulary
   for select to authenticated using (true);
+
+-- 서버: 승인된 서버는 모두에게, 승인 전 서버는 등록한 본인에게만 보인다.
+-- 사용자는 이름·게임·설명·초대 링크만 쓸 수 있다. status와 인원 수는
+-- 관리자(대시보드)와 Edge Function(service_role)만 바꾼다.
 create policy "servers_select" on public.servers
-  for select to authenticated using (true);
+  for select to authenticated
+  using (status = 'approved' or (select auth.uid()) = owner_id);
+create policy "servers_insert_own" on public.servers
+  for insert to authenticated
+  with check ((select auth.uid()) = owner_id);
+create policy "servers_update_own" on public.servers
+  for update to authenticated
+  using ((select auth.uid()) = owner_id)
+  with check ((select auth.uid()) = owner_id);
+create policy "servers_delete_own" on public.servers
+  for delete to authenticated
+  using ((select auth.uid()) = owner_id);
+
+revoke insert, update on public.servers from anon, authenticated;
+grant insert (name, game_id, description, invite_url, owner_id) on public.servers to authenticated;
+grant update (name, game_id, description, invite_url) on public.servers to authenticated;
+
+-- 승인 후 초대 링크를 다른 서버로 바꾸면 다시 승인을 받아야 한다.
+create function public.reset_server_status_on_invite_change()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.invite_url is distinct from old.invite_url then
+    new.status := 'pending';
+    new.member_count := 0;
+    new.online_count := 0;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger servers_reset_status_on_invite_change
+  before update on public.servers
+  for each row execute function public.reset_server_status_on_invite_change();
 
 -- chat_members 정책에서 chat_members를 직접 조회하면 RLS가 무한 재귀에 빠진다.
 -- security definer 함수로 RLS를 우회해 호출자 본인의 참여 여부만 확인한다.
