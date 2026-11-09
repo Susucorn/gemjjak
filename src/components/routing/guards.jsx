@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { readReturnTo } from '../../lib/returnTo'
 import { Button } from '../ui/Button'
 import { FullScreenStatus } from './FullScreenStatus'
 
@@ -51,10 +52,10 @@ export function RequireNotOnboarded() {
   return <ProfileGate>{profile?.onboarded ? <Navigate to="/" replace /> : <Outlet />}</ProfileGate>
 }
 
-/** 이미 로그인했다면 /login을 건너뛴다. */
+/** 이미 로그인했다면 /login을 건너뛴다. 디스코드에서 돌아온 직후라면 원래 가려던 화면으로 보낸다. */
 export function GuestOnly() {
   const { user, isSessionLoading } = useAuth()
 
   if (isSessionLoading) return <Loading />
-  return user ? <Navigate to="/" replace /> : <Outlet />
+  return user ? <Navigate to={readReturnTo()} replace /> : <Outlet />
 }
