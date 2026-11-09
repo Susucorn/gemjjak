@@ -1,0 +1,65 @@
+.tile {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+}
+
+/* 장식용 원 두 개로 일러스트 느낌을 낸다. */
+.orb,
+.tile::after {
+  position: absolute;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 22%);
+  content: '';
+}
+
+.orb {
+  top: -30%;
+  right: -12%;
+  width: 70%;
+  aspect-ratio: 1;
+}
+
+.tile::after {
+  bottom: -40%;
+  left: -15%;
+  width: 55%;
+  aspect-ratio: 1;
+  background: rgb(255 255 255 / 14%);
+}
+
+.mark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  color: rgb(255 255 255 / 92%);
+  font-size: 28px;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+}
+
+.sky {
+  background: linear-gradient(135deg, #7cc4ff, #5b7cfa);
+}
+
+.gold {
+  background: linear-gradient(135deg, #f5c66b, #c98a2e);
+}
+
+.rose {
+  background: linear-gradient(135deg, #ff8a8a, #e0456b);
+}
+
+.night {
+  background: linear-gradient(135deg, #8b7cf6, #3b3486);
+}
+
+.mint {
+  background: linear-gradient(135deg, #6fe0c4, #2a9d8f);
+}
+
+.violet {
+  background: linear-gradient(135deg, #a5b0ff, #5865f2);
+}

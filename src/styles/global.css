@@ -17,6 +17,9 @@ body {
   font-family: var(--font-sans);
   font-size: var(--font-size-md);
   line-height: 1.5;
+  /* 한글이 단어 중간("사람" → "사/람")에서 줄바꿈되지 않게 한다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
 }
 
