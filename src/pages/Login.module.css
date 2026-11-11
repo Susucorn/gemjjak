@@ -177,6 +177,36 @@
   opacity: 0.6;
 }
 
+/* 구글 브랜드 가이드: 흰 배경 + 회색 테두리 + 4색 G 로고 */
+.googleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 56px;
+  border: 1px solid #747775;
+  border-radius: var(--radius-button);
+  background: var(--color-bg);
+  color: #1f1f1f;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.googleButton:hover:not(:disabled) {
+  background: var(--color-bg-subtle);
+}
+
+.googleButton:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.googleButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .note {
   color: var(--color-text-tertiary);
   font-size: 12px;
@@ -204,7 +234,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .discordButton {
+  .discordButton,
+  .googleButton {
     transition: none;
   }
 }

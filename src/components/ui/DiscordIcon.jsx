@@ -1,4 +1,4 @@
-// 디스코드 로고. "디스코드로 로그인" 버튼에만 쓴다.
+// 디스코드 로고. 로그인 버튼과 디스코드 연결·서버 표시에 쓴다.
 export function DiscordIcon({ size = 22 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

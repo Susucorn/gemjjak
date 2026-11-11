@@ -1,13 +1,9 @@
 import { supabase } from '../lib/supabaseClient'
 
-/**
- * 디스코드 로그인 페이지로 이동한다. 성공하면 브라우저가 이 앱의 /login으로 돌아오고,
- * supabase-js가 주소의 인증 코드를 세션으로 바꾼다.
- * 돌아올 주소는 Supabase 대시보드 Authentication > URL Configuration의 Redirect URLs에 있어야 한다.
- */
-export async function signInWithDiscord() {
+/** provider: 'discord' | 'google'. 로그인 후 /login으로 돌아오면 가드가 원래 화면으로 보낸다. */
+export async function signInWithProvider(provider) {
   const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'discord',
+    provider,
     options: { redirectTo: `${window.location.origin}/login` },
   })
   if (error) throw error
@@ -16,4 +12,12 @@ export async function signInWithDiscord() {
 export async function signOut() {
   const { error } = await supabase.auth.signOut()
   if (error) throw error
+}
+
+/** 디스코드로 가입한 계정인지. 구글 계정은 디스코드 표시를 하지 않는다. */
+export function isDiscordUser(user) {
+  return (
+    user?.app_metadata?.provider === 'discord' ||
+    Boolean(user?.app_metadata?.providers?.includes('discord'))
+  )
 }

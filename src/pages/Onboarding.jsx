@@ -1,78 +1,42 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FullScreenStatus } from '../components/routing/FullScreenStatus'
+import { BackIcon } from '../components/ui/BackIcon'
 import { Button } from '../components/ui/Button'
 import { useAuth } from '../hooks/useAuth'
-import { signOut } from '../services/authService'
+import { useLoader } from '../hooks/useLoader'
+import { isDiscordUser, signOut } from '../services/authService'
+import { fetchPreferenceOptions, saveMyPreferences } from '../services/preferencesService'
+import { updateNickname } from '../services/profileService'
+import { NicknameStep } from './onboarding/NicknameStep'
+import { PreferenceStep } from './onboarding/PreferenceStep'
 import {
-  fetchGames,
-  fetchGenres,
-  fetchTagVocabulary,
-  saveMyPreferences,
-} from '../services/preferencesService'
-import { GameStep } from './onboarding/GameStep'
-import { TagStep } from './onboarding/TagStep'
-import { TimeStep } from './onboarding/TimeStep'
+  PREFERENCE_STEPS,
+  emptyPreferences,
+  genresOfGames,
+  stepRequirement,
+  toSavePayload,
+} from './onboarding/preferenceRules'
 import styles from './onboarding/Onboarding.module.css'
 
-const STEPS = [
-  {
-    title: '어떤 게임을 하세요?',
-    description: '하는 게임을 모두 골라 주세요. 목록에 없으면 검색해서 추가를 요청할 수 있어요.',
-  },
-  {
-    title: '어떻게 플레이하세요?',
-    description: '장르와 플레이 스타일이 맞는 사람일수록 궁합 점수가 높아져요.',
-  },
-  {
-    title: '주로 언제 접속하세요?',
-    description: '평일과 주말을 나눠 골라 주세요. 접속 시간이 겹치는 사람을 추천해요.',
-  },
-]
-
-function toggleInSet(set, value) {
-  const next = new Set(set)
-  if (next.has(value)) next.delete(value)
-  else next.add(value)
-  return next
+const NICKNAME_STEP = {
+  key: 'nickname',
+  title: '겜짝에서 쓸 닉네임을 정해 주세요',
+  description: '다른 게이머에게 보이는 이름이에요. 실명이 아니어도 돼요.',
 }
 
 export function Onboarding() {
-  const { profile, refreshProfile } = useAuth()
-  const [data, setData] = useState({ status: 'loading', games: [], genres: [], vocabulary: [] })
+  const { user, profile, refreshProfile } = useAuth()
+  const options = useLoader(fetchPreferenceOptions)
+  // 디스코드 가입자는 디스코드 이름을 쓰고, 구글 가입자는 실명 대신 닉네임을 먼저 정한다.
+  const needsNickname = !isDiscordUser(user)
+  const steps = needsNickname ? [NICKNAME_STEP, ...PREFERENCE_STEPS] : PREFERENCE_STEPS
   const [step, setStep] = useState(0)
-  const [gameIds, setGameIds] = useState(() => new Set())
-  const [requestedGames, setRequestedGames] = useState([])
-  const [genreIds, setGenreIds] = useState(() => new Set())
-  const [tags, setTags] = useState(() => new Set())
-  const [hours, setHours] = useState(() => ({ weekday: new Set(), weekend: new Set() }))
+  const [nickname, setNickname] = useState('')
+  const [prefs, setPrefs] = useState(emptyPreferences)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const headingRef = useRef(null)
   const isFirstRender = useRef(true)
-
-  // 첫 화면은 이미 loading 상태로 시작하므로 effect 안에서 상태를 바꾸지 않고 결과만 반영한다.
-  // 화면을 벗어난 뒤 늦게 도착한 응답은 버린다.
-  const [loadKey, setLoadKey] = useState(0)
-
-  useEffect(() => {
-    let isStale = false
-    Promise.all([fetchGames(), fetchGenres(), fetchTagVocabulary()]).then(
-      ([games, genres, vocabulary]) => {
-        if (!isStale) setData({ status: 'ready', games, genres, vocabulary })
-      },
-      () => {
-        if (!isStale) setData((prev) => ({ ...prev, status: 'error' }))
-      },
-    )
-    return () => {
-      isStale = true
-    }
-  }, [loadKey])
-
-  const reload = useCallback(() => {
-    setData((prev) => ({ ...prev, status: 'loading' }))
-    setLoadKey((key) => key + 1)
-  }, [])
 
   // 단계가 바뀌면 화면 맨 위로 올리고, 스크린 리더가 새 질문을 읽도록 제목에 초점을 준다.
   useEffect(() => {
@@ -84,54 +48,34 @@ export function Onboarding() {
     headingRef.current?.focus()
   }, [step])
 
-  if (data.status === 'loading') return <FullScreenStatus>불러오는 중이에요</FullScreenStatus>
-  if (data.status === 'error') {
+  if (options.status === 'loading') return <FullScreenStatus>불러오는 중이에요</FullScreenStatus>
+  if (options.status === 'error') {
     return (
       <FullScreenStatus>
         게임 목록을 불러오지 못했어요
-        <Button onClick={reload}>다시 시도</Button>
+        <Button onClick={options.reload}>다시 시도</Button>
       </FullScreenStatus>
     )
   }
 
-  const hasStyleTag = data.vocabulary.some(
-    (item) => item.category === 'style' && tags.has(item.tag),
-  )
-  // 단계별로 아직 채우지 않은 필수 항목 안내. null이면 다음으로 갈 수 있다.
-  const requirement = [
-    gameIds.size + requestedGames.length === 0
-      ? '게임을 1개 이상 고르거나 추가 요청해 주세요'
-      : null,
-    genreIds.size === 0
-      ? '좋아하는 장르를 1개 이상 골라 주세요'
-      : !hasStyleTag
-        ? '플레이 스타일을 1개 이상 골라 주세요'
-        : null,
-    hours.weekday.size + hours.weekend.size === 0 ? '접속 시간을 1칸 이상 골라 주세요' : null,
-  ][step]
-  const isStepValid = requirement === null
-  const isLastStep = step === STEPS.length - 1
-  const current = STEPS[step]
-  const genreNameById = new Map(data.genres.map((genre) => [genre.id, genre.name]))
+  const current = steps[step]
+  // 취향 단계 번호(0 게임, 1 스타일, 2 시간). 닉네임 단계면 -1
+  const preferenceStep = step - (needsNickname ? 1 : 0)
+  const isNicknameStep = current.key === 'nickname'
+  const requirement = isNicknameStep
+    ? nickname.trim() === ''
+      ? '닉네임을 입력해 주세요'
+      : null
+    : stepRequirement(preferenceStep, prefs, options.data.vocabulary)
+  const isLastStep = step === steps.length - 1
+  const greetingName = needsNickname ? nickname.trim() : profile?.nickname
 
   async function handleSubmit() {
-    // 게임 선택을 바꾸면 빠진 게임의 콘텐츠 태그가 남아 있을 수 있어 저장 직전에 걸러 낸다.
-    const validTags = data.vocabulary
-      .filter((item) => item.category !== 'activity' || gameIds.has(item.game_id))
-      .map((item) => item.tag)
-    const savedTags = [...tags].filter((tag) => validTags.includes(tag))
-
     setIsSaving(true)
     setSaveError(null)
     try {
-      await saveMyPreferences({
-        gameIds: [...gameIds],
-        requestedGames,
-        genreIds: [...genreIds],
-        tags: savedTags,
-        weekdayHours: [...hours.weekday],
-        weekendHours: [...hours.weekend],
-      })
+      if (needsNickname) await updateNickname(user.id, nickname)
+      await saveMyPreferences(toSavePayload(prefs, options.data.vocabulary))
       // onboarded가 true로 바뀌면 라우트 가드가 홈으로 보낸다.
       await refreshProfile()
     } catch {
@@ -141,16 +85,14 @@ export function Onboarding() {
   }
 
   function handleNext() {
+    if (requirement !== null || isSaving) return
     if (isLastStep) {
       handleSubmit()
       return
     }
     // 장르를 아직 안 골랐다면 고른 게임의 장르를 미리 선택해 둔다. 사용자가 바로 고칠 수 있다.
-    if (step === 0 && genreIds.size === 0) {
-      const gameGenres = data.games
-        .filter((game) => gameIds.has(game.id) && game.genre_id)
-        .map((game) => game.genre_id)
-      setGenreIds(new Set(gameGenres))
+    if (preferenceStep === 0 && prefs.genreIds.size === 0) {
+      setPrefs((prev) => ({ ...prev, genreIds: genresOfGames(options.data.games, prev.gameIds) }))
     }
     setStep(step + 1)
   }
@@ -167,15 +109,7 @@ export function Onboarding() {
               disabled={isSaving}
               aria-label="이전 단계"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M15 5l-7 7 7 7"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <BackIcon />
             </button>
           ) : (
             <button
@@ -187,7 +121,7 @@ export function Onboarding() {
             </button>
           )}
           <p className={styles.stepCount}>
-            {step + 1} / {STEPS.length}
+            {step + 1} / {steps.length}
           </p>
         </header>
 
@@ -196,18 +130,18 @@ export function Onboarding() {
           role="progressbar"
           aria-label="온보딩 진행률"
           aria-valuemin={1}
-          aria-valuemax={STEPS.length}
+          aria-valuemax={steps.length}
           aria-valuenow={step + 1}
         >
           <span
             className={styles.progressFill}
-            style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
+            style={{ width: `${((step + 1) / steps.length) * 100}%` }}
           />
         </div>
 
         <section className={styles.intro}>
-          {step === 0 && profile?.nickname && (
-            <p className={styles.greeting}>{profile.nickname}님, 반가워요!</p>
+          {preferenceStep === 0 && greetingName && (
+            <p className={styles.greeting}>{greetingName}님, 반가워요!</p>
           )}
           <h1 ref={headingRef} tabIndex={-1} className={styles.title}>
             {current.title}
@@ -216,37 +150,14 @@ export function Onboarding() {
         </section>
 
         <div className={styles.body}>
-          {step === 0 && (
-            <GameStep
-              games={data.games}
-              genreNameById={genreNameById}
-              selectedIds={gameIds}
-              requestedGames={requestedGames}
-              onToggle={(id) => setGameIds((prev) => toggleInSet(prev, id))}
-              onRequest={(name) => setRequestedGames((prev) => [...prev, name])}
-              onRemoveRequest={(name) =>
-                setRequestedGames((prev) => prev.filter((item) => item !== name))
-              }
-            />
-          )}
-          {step === 1 && (
-            <TagStep
-              genres={data.genres}
-              selectedGenreIds={genreIds}
-              onToggleGenre={(id) => setGenreIds((prev) => toggleInSet(prev, id))}
-              vocabulary={data.vocabulary}
-              selectedGameIds={gameIds}
-              selectedTags={tags}
-              onToggleTag={(tag) => setTags((prev) => toggleInSet(prev, tag))}
-            />
-          )}
-          {step === 2 && (
-            <TimeStep
-              hours={hours}
-              onToggleHour={(dayType, hour) =>
-                setHours((prev) => ({ ...prev, [dayType]: toggleInSet(prev[dayType], hour) }))
-              }
-              onSetHours={(dayType, next) => setHours((prev) => ({ ...prev, [dayType]: next }))}
+          {isNicknameStep ? (
+            <NicknameStep nickname={nickname} onChange={setNickname} onSubmit={handleNext} />
+          ) : (
+            <PreferenceStep
+              step={preferenceStep}
+              options={options.data}
+              prefs={prefs}
+              onChange={setPrefs}
             />
           )}
         </div>
@@ -261,7 +172,7 @@ export function Onboarding() {
           <Button
             className={styles.nextButton}
             onClick={handleNext}
-            disabled={!isStepValid || isSaving}
+            disabled={requirement !== null || isSaving}
             aria-busy={isSaving}
           >
             {isLastStep ? (isSaving ? '저장 중…' : '겜짝 시작하기') : '다음'}

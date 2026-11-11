@@ -2,16 +2,17 @@ import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Avatar } from '../components/ui/Avatar'
 import { DiscordIcon } from '../components/ui/DiscordIcon'
+import { GoogleIcon } from '../components/ui/GoogleIcon'
 import { isSupabaseConfigured } from '../lib/supabaseClient'
 import { saveReturnTo } from '../lib/returnTo'
-import { signInWithDiscord } from '../services/authService'
+import { signInWithProvider } from '../services/authService'
 import styles from './Login.module.css'
 
 const SAMPLE_TAGS = ['즐겜', '보이스OK', '뉴비환영']
 const SAMPLE_SCORE = 95
 
 /**
- * 디스코드에서 취소하거나 실패하면 Supabase가 ?error=...를 붙여 /login으로 돌려보낸다.
+ * 디스코드·구글에서 취소하거나 실패하면 Supabase가 ?error=...를 붙여 /login으로 돌려보낸다.
  * 흐름에 따라 쿼리 대신 #해시에 붙기도 해서 둘 다 확인한다.
  */
 function readOAuthError() {
@@ -19,14 +20,15 @@ function readOAuthError() {
   const hash = new URLSearchParams(window.location.hash.slice(1))
   const code = search.get('error') ?? hash.get('error')
   if (!code) return null
-  if (code === 'access_denied') return '디스코드 로그인을 취소했어요. 다시 시도해 주세요.'
+  if (code === 'access_denied') return '로그인을 취소했어요. 다시 시도해 주세요.'
   return '로그인하지 못했어요. 잠시 후 다시 시도해 주세요.'
 }
 
 export function Login() {
   const location = useLocation()
   const [error, setError] = useState(readOAuthError)
-  const [isRedirecting, setIsRedirecting] = useState(false)
+  // 이동 중인 로그인 방법. null이면 버튼을 누를 수 있다.
+  const [redirectingTo, setRedirectingTo] = useState(null)
 
   // 오류 파라미터가 주소창에 남아 있으면 새로고침할 때마다 같은 오류가 다시 뜬다.
   useEffect(() => {
@@ -35,27 +37,27 @@ export function Login() {
     }
   }, [])
 
-  // 디스코드 화면에서 뒤로 가기로 돌아오면 브라우저가 이전 화면을 그대로 복원해
+  // 디스코드·구글 화면에서 뒤로 가기로 돌아오면 브라우저가 이전 화면을 그대로 복원해
   // 버튼이 "이동 중" 상태로 멈춰 있게 된다.
   useEffect(() => {
     const handlePageShow = (event) => {
-      if (event.persisted) setIsRedirecting(false)
+      if (event.persisted) setRedirectingTo(null)
     }
     window.addEventListener('pageshow', handlePageShow)
     return () => window.removeEventListener('pageshow', handlePageShow)
   }, [])
 
-  async function handleLogin() {
+  async function handleLogin(provider) {
     const from = location.state?.from
     if (from) saveReturnTo(`${from.pathname}${from.search ?? ''}${from.hash ?? ''}`)
 
     setError(null)
-    setIsRedirecting(true)
+    setRedirectingTo(provider)
     try {
-      await signInWithDiscord()
+      await signInWithProvider(provider)
     } catch {
-      setError('디스코드 로그인 화면을 열지 못했어요. 잠시 후 다시 시도해 주세요.')
-      setIsRedirecting(false)
+      setError('로그인 화면을 열지 못했어요. 잠시 후 다시 시도해 주세요.')
+      setRedirectingTo(null)
     }
   }
 
@@ -125,18 +127,29 @@ export function Login() {
           <button
             type="button"
             className={styles.discordButton}
-            onClick={handleLogin}
-            disabled={!isSupabaseConfigured || isRedirecting}
-            aria-busy={isRedirecting}
+            onClick={() => handleLogin('discord')}
+            disabled={!isSupabaseConfigured || redirectingTo !== null}
+            aria-busy={redirectingTo === 'discord'}
           >
             <DiscordIcon />
-            {isRedirecting ? '디스코드로 이동 중…' : '디스코드로 시작하기'}
+            {redirectingTo === 'discord' ? '디스코드로 이동 중…' : '디스코드로 시작하기'}
+          </button>
+
+          <button
+            type="button"
+            className={styles.googleButton}
+            onClick={() => handleLogin('google')}
+            disabled={!isSupabaseConfigured || redirectingTo !== null}
+            aria-busy={redirectingTo === 'google'}
+          >
+            <GoogleIcon />
+            {redirectingTo === 'google' ? '구글로 이동 중…' : '구글로 시작하기'}
           </button>
 
           <p className={styles.note}>
-            디스코드 닉네임과 프로필 사진만 가져와요.
+            디스코드가 없다면 구글 계정으로 시작할 수 있어요.
             <br />
-            디스코드 계정에 글을 쓰거나 서버에 참여하지 않아요.
+            어느 쪽이든 계정에 글을 쓰거나 서버에 참여하지 않아요.
           </p>
         </div>
       </div>

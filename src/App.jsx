@@ -14,6 +14,9 @@ import { Home } from './pages/Home'
 import { Login } from './pages/Login'
 import { Onboarding } from './pages/Onboarding'
 import { Profile } from './pages/Profile'
+import { PreferenceEdit } from './pages/profile/PreferenceEdit'
+import { ProfileInfoEdit } from './pages/profile/ProfileInfoEdit'
+import { ServerForm } from './pages/profile/ServerForm'
 
 export default function App() {
   return (
@@ -37,6 +40,12 @@ export default function App() {
                 <Route path="/community" element={<Community />} />
                 <Route path="/profile" element={<Profile />} />
               </Route>
+
+              {/* 프로필 수정 화면은 탭바 없이 전체 화면으로 띄운다. */}
+              <Route path="/profile/edit/info" element={<ProfileInfoEdit />} />
+              <Route path="/profile/edit/:section" element={<PreferenceEdit />} />
+              <Route path="/profile/servers/new" element={<ServerForm />} />
+              <Route path="/profile/servers/:serverId" element={<ServerForm />} />
             </Route>
           </Route>
 

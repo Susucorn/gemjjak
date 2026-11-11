@@ -69,6 +69,11 @@
   padding: var(--space-8) 0 var(--space-6);
 }
 
+/* 프로필 수정 화면: 진행 막대가 없어 위 여백을 줄인다. */
+.introCompact {
+  padding-top: var(--space-4);
+}
+
 .greeting {
   color: var(--color-primary);
   font-weight: 700;
