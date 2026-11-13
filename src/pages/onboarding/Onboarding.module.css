@@ -40,6 +40,33 @@
   background: var(--color-bg-muted);
 }
 
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.homeButton {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-chip);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.homeButton:hover:not(:disabled) {
+  background: var(--color-bg-muted);
+}
+
+.homeButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .stepCount {
   color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);
@@ -133,18 +160,6 @@
 
 .nextButton:active:not(:disabled) {
   transform: scale(0.97);
-}
-
-.textButton {
-  min-height: var(--touch-target);
-  padding: 0 var(--space-2);
-  border: 0;
-  background: none;
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-sm);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
 }
 
 /* 1단계: 검색 · 플랫폼 · 고른 게임 */

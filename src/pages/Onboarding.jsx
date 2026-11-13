@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { FullScreenStatus } from '../components/routing/FullScreenStatus'
 import { BackIcon } from '../components/ui/BackIcon'
 import { Button } from '../components/ui/Button'
+import { Sheet } from '../components/ui/Sheet'
 import { useAuth } from '../hooks/useAuth'
 import { useLoader } from '../hooks/useLoader'
 import { isDiscordUser, signOut } from '../services/authService'
 import { fetchPreferenceOptions, saveMyPreferences } from '../services/preferencesService'
 import { updateNickname } from '../services/profileService'
+import { totalHours } from './onboarding/hours'
 import { NicknameStep } from './onboarding/NicknameStep'
 import { PreferenceStep } from './onboarding/PreferenceStep'
 import {
@@ -35,6 +37,7 @@ export function Onboarding() {
   const [prefs, setPrefs] = useState(emptyPreferences)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
+  const [isLeaveOpen, setIsLeaveOpen] = useState(false)
   const headingRef = useRef(null)
   const isFirstRender = useRef(true)
 
@@ -84,6 +87,24 @@ export function Onboarding() {
     }
   }
 
+  // 처음 화면(소개 페이지)은 로그인 전에만 보이므로 로그아웃하면 라우트 가드가 그쪽으로 보낸다.
+  function leaveToStart() {
+    signOut().catch(() => {})
+  }
+
+  // 입력한 게 있으면 사라진다고 먼저 알리고, 없으면 바로 나간다.
+  function handleGoToStart() {
+    const hasInput =
+      nickname.trim() !== '' ||
+      prefs.gameIds.size + prefs.customGames.length > 0 ||
+      prefs.genreIds.size + prefs.customGenres.length > 0 ||
+      prefs.tags.size > 0 ||
+      Object.values(prefs.customTags).some((names) => names.length > 0) ||
+      totalHours(prefs.hours) > 0
+    if (hasInput) setIsLeaveOpen(true)
+    else leaveToStart()
+  }
+
   function handleNext() {
     if (requirement !== null || isSaving) return
     if (isLastStep) {
@@ -101,29 +122,40 @@ export function Onboarding() {
     <main className={styles.page}>
       <div className={styles.inner}>
         <header className={styles.header}>
-          {step > 0 ? (
+          {/* 첫 단계에서 뒤로 가면 처음 화면으로 간다. */}
+          <button
+            type="button"
+            className={styles.backButton}
+            onClick={() => (step > 0 ? setStep(step - 1) : handleGoToStart())}
+            disabled={isSaving}
+            aria-label={step > 0 ? '이전 단계' : '처음 화면으로'}
+          >
+            <BackIcon />
+          </button>
+          <div className={styles.headerRight}>
+            <p className={styles.stepCount}>
+              {step + 1} / {steps.length}
+            </p>
             <button
               type="button"
-              className={styles.backButton}
-              onClick={() => setStep(step - 1)}
+              className={styles.homeButton}
+              onClick={handleGoToStart}
               disabled={isSaving}
-              aria-label="이전 단계"
             >
-              <BackIcon />
+              처음 화면
             </button>
-          ) : (
-            <button
-              type="button"
-              className={styles.textButton}
-              onClick={() => signOut().catch(() => {})}
-            >
-              로그아웃
-            </button>
-          )}
-          <p className={styles.stepCount}>
-            {step + 1} / {steps.length}
-          </p>
+          </div>
         </header>
+
+        {isLeaveOpen && (
+          <Sheet
+            title="처음 화면으로 갈까요?"
+            description="지금까지 입력한 내용은 저장되지 않아요. 다시 로그인하면 처음부터 입력해요."
+            submitLabel="처음 화면으로"
+            onSubmit={leaveToStart}
+            onClose={() => setIsLeaveOpen(false)}
+          />
+        )}
 
         <div
           className={styles.progress}
