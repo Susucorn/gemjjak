@@ -1,0 +1,127 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  height: 100%;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card-lg);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-card);
+}
+
+.compact {
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+}
+
+.nickname {
+  overflow: hidden;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.games {
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--color-primary);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.scoreLabel {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.compactScore {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+
+.compactScore strong {
+  color: var(--color-primary);
+  font-size: var(--font-size-lg);
+}
+
+.gauge {
+  overflow: hidden;
+  height: 8px;
+  border-radius: var(--radius-chip);
+  background: var(--color-bg-muted);
+}
+
+.compact .gauge {
+  height: 6px;
+}
+
+.gaugeFill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-chip);
+  background: var(--color-bg-muted);
+  color: var(--color-text-tertiary-on-gray);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tagCommon {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+  font-weight: 700;
+}
+
+.reason {
+  margin-top: auto;
+  padding: var(--space-3);
+  border-radius: var(--space-3);
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.compactReason {
+  margin-top: auto;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}

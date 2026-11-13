@@ -1,0 +1,165 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.greeting {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.title {
+  font-size: var(--font-size-xl);
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) 0;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* 내 취향 요약 */
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-card);
+  background: var(--color-primary-soft);
+}
+
+.summaryText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.summaryLabel {
+  color: var(--color-primary-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.summaryGames {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summaryMeta {
+  color: var(--color-primary-strong);
+  font-size: var(--font-size-sm);
+}
+
+.summaryLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+  color: var(--color-primary-strong);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+/* 섹션 */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sectionTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.sectionHint {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.empty {
+  padding: var(--space-6) var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+/* 오늘의 추천: 가로로 넘기는 카드. 화면 끝까지 넘치게 해서 넘길 수 있다는 걸 보여 준다. */
+.carousel {
+  display: grid;
+  grid-auto-columns: min(300px, 82%);
+  grid-auto-flow: column;
+  gap: var(--space-3);
+  margin: 0 calc(var(--space-4) * -1);
+  padding: var(--space-1) var(--space-4) var(--space-3);
+  overflow-x: auto;
+  list-style: none;
+  scroll-padding: 0 var(--space-4);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.carouselItem {
+  scroll-snap-align: start;
+}
+
+/* 나와 유사한 플레이어: 2열 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: var(--font-size-2xl);
+  }
+
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+}
+
+/* 데스크톱: 마우스로는 가로로 넘기기 어려워 카드를 줄바꿈해서 모두 보여 준다. */
+@media (min-width: 1024px) {
+  .carousel {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+}
