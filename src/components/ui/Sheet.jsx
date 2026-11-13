@@ -40,7 +40,12 @@ export function Sheet({
       ref={dialogRef}
       className={styles.dialog}
       aria-labelledby={titleId}
-      onClose={onClose}
+      // Esc로 닫을 때. close 이벤트에 걸면 개발 모드(StrictMode)가 effect를 한 번 정리하며 부른
+      // dialog.close() 때문에 창이 열리자마자 닫힌다. 그래서 cancel만 받아 직접 닫는다.
+      onCancel={(event) => {
+        event.preventDefault()
+        onClose()
+      }}
       // 바깥 어두운 영역을 누르면 닫는다. 키보드 사용자는 Esc나 취소 버튼으로 닫는다.
       onClick={(event) => {
         if (event.target === dialogRef.current) onClose()

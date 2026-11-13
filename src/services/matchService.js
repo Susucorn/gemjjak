@@ -46,7 +46,7 @@ export async function fetchPlayers(myId, onlyIds = null) {
     slots,
   ] = await Promise.all([
     selectAll(profileQuery),
-    selectAll(supabase.from('games').select('id, name, genre_id')),
+    selectAll(supabase.from('games').select('id, name, genre_id, aliases')),
     selectAll(supabase.from('genres').select('id, name')),
     selectAll(byUser(supabase.from('user_games').select('user_id, game_id'))),
     selectAll(byUser(supabase.from('user_custom_games').select('user_id, name'))),

@@ -112,12 +112,12 @@ npx supabase functions deploy --use-api
 
 인증은 함수 안의 `withSupabase({ auth: 'user' })`가 처리하므로 `supabase/config.toml`의 `verify_jwt`는 `false`입니다.
 
-현재 두 함수는 입력과 인증까지만 처리하고 `501 not_implemented`를 반환합니다. `search_players`도 호출하면 오류가 납니다.
+`ai-search`는 문장을 탐색 필터로 바꿔 돌려주고, 사람 찾기와 궁합 계산은 브라우저가 합니다. `analyze-bio`는 아직 `501 not_implemented`를 반환하고, DB 함수 `search_players`는 쓰지 않습니다.
 
 | 함수          | 입력                         | 출력                               |
 | ------------- | ---------------------------- | ---------------------------------- |
 | `analyze-bio` | `{ bio, game_ids }`          | `{ style, activities[], wants[] }` |
-| `ai-search`   | `{ question }` + 로그인 토큰 | `{ conditions, players }` (예정)   |
+| `ai-search`   | `{ question }` + 로그인 토큰 | `{ conditions }` (games, genres, tags, weekdays, hours, summary) |
 
 ## 6. Vercel 배포
 
