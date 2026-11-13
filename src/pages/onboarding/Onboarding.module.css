@@ -630,6 +630,20 @@
   font-weight: 700;
 }
 
+.hourCell:disabled,
+.chips button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* 여러 요일을 골랐을 때 일부 요일에만 있는 시간 */
+.hourCellPartial {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
 @media (min-width: 768px) {
   .page {
     align-items: flex-start;

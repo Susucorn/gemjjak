@@ -59,13 +59,10 @@ export function PreferenceStep({ step, options, prefs, onChange }) {
   return (
     <TimeStep
       hours={prefs.hours}
-      onToggleHour={(day, hour) =>
-        update('hours', (hours) => ({ ...hours, [day]: toggleInSet(hours[day], hour) }))
-      }
-      onSetHours={(days, next) =>
+      onChangeDays={(days, change) =>
         update('hours', (hours) => ({
           ...hours,
-          ...Object.fromEntries(days.map((day) => [day, new Set(next)])),
+          ...Object.fromEntries(days.map((day) => [day, change(new Set(hours[day]))])),
         }))
       }
     />

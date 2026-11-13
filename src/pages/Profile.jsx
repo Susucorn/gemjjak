@@ -59,10 +59,6 @@ export function Profile() {
         </div>
       )}
       {loaded.status === 'ready' && <ProfileDetails {...loaded.data} />}
-
-      <button type="button" className={styles.signOut} onClick={() => signOut().catch(() => {})}>
-        로그아웃
-      </button>
     </div>
   )
 }
@@ -94,9 +90,18 @@ function ProfileHeader({ user, profile }) {
       <p className={profile?.bio ? styles.bio : styles.bioEmpty}>
         {profile?.bio || '아직 소개가 없어요. 어떤 게이머인지 한 줄로 알려 주세요.'}
       </p>
-      <Link to="/profile/edit/info" className={styles.editProfile}>
-        프로필 수정
-      </Link>
+      <div className={styles.headerActions}>
+        <Link to="/profile/edit/info" className={styles.editProfile}>
+          프로필 수정
+        </Link>
+        <button
+          type="button"
+          className={styles.signOut}
+          onClick={() => signOut().catch(() => {})}
+        >
+          로그아웃
+        </button>
+      </div>
     </section>
   )
 }

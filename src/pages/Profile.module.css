@@ -102,21 +102,45 @@
   font-size: var(--font-size-sm);
 }
 
-.editProfile {
+.headerActions {
   display: flex;
   grid-column: 1 / -1;
+  gap: var(--space-2);
+}
+
+.editProfile,
+.signOut {
+  display: flex;
   align-items: center;
   justify-content: center;
   min-height: var(--touch-target);
+  padding: 0 var(--space-4);
   border-radius: var(--radius-button);
-  background: var(--color-bg-muted);
-  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
   font-weight: 700;
   text-decoration: none;
+  cursor: pointer;
+}
+
+.editProfile {
+  flex: 1;
+  background: var(--color-bg-muted);
+  color: var(--color-text-primary);
 }
 
 .editProfile:hover {
   background: var(--color-border);
+}
+
+.signOut {
+  flex: none;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+}
+
+.signOut:hover {
+  background: var(--color-bg-subtle);
 }
 
 /* 활동 통계 */
@@ -404,19 +428,6 @@
   color: #b42318;
 }
 
-.signOut {
-  align-self: center;
-  min-height: var(--touch-target);
-  padding: 0 var(--space-4);
-  border: 0;
-  background: none;
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-sm);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-
 @media (min-width: 768px) {
   .header {
     grid-template-columns: auto 1fr auto;
@@ -429,9 +440,12 @@
     grid-row: 2;
   }
 
-  .editProfile {
+  .headerActions {
     grid-column: 3;
     grid-row: 1;
+  }
+
+  .editProfile {
     padding: 0 var(--space-5);
   }
 
