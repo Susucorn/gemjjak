@@ -271,15 +271,15 @@
 .bigNumber {
   flex: none;
   color: transparent;
-  font-size: 56px;
+  font-size: 72px;
   font-weight: 700;
   line-height: 0.9;
-  -webkit-text-stroke: 1.5px var(--color-text-primary);
+  -webkit-text-stroke: 2px var(--color-text-primary);
 }
 
 .featureTitle {
   min-width: 0;
-  font-size: 18px;
+  font-size: var(--font-size-xl);
   line-height: 1.35;
   letter-spacing: -0.02em;
 }
@@ -738,7 +738,6 @@
 
   .bigNumber {
     font-size: 96px;
-    -webkit-text-stroke-width: 2px;
   }
 
   .featureTitle {
