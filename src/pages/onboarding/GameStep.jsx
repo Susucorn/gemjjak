@@ -1,49 +1,105 @@
 import { useState } from 'react'
 import { GameTile } from '../../components/ui/GameTile'
-import { PLATFORMS, matchesPlatform, matchesQuery, normalize } from './gameSearch'
+import {
+  MAX_CUSTOM_GAMES,
+  MAX_GAME_NAME_LENGTH,
+  POPULAR_GAME_COUNT,
+  findExactGame,
+  matchesQuery,
+  normalize,
+} from './gameSearch'
 import styles from './Onboarding.module.css'
 
-const MAX_REQUEST_LENGTH = 40
+const MAX_SUGGESTIONS = 5
 
+/**
+ * 인기 게임 몇 개만 카드로 보여 주고, 나머지는 검색하거나 이름을 직접 입력한다.
+ * 직접 입력한 게임은 승인 없이 바로 저장되고 같은 이름을 입력한 사람끼리 매칭된다.
+ */
 export function GameStep({
   games,
   genreNameById,
   selectedIds,
-  requestedGames,
+  customGames,
   onToggle,
-  onRequest,
-  onRemoveRequest,
+  onAddCustom,
+  onRemoveCustom,
 }) {
   const [query, setQuery] = useState('')
-  const [platform, setPlatform] = useState('all')
-
   const trimmedQuery = query.trim()
-  const visibleGames = games.filter(
-    (game) => matchesPlatform(game, platform) && matchesQuery(game, trimmedQuery),
-  )
-  // 다른 플랫폼 탭에 있는 게임을 "목록에 없음"으로 착각해 요청하지 않게 한다.
-  const otherPlatformCount =
-    visibleGames.length === 0 && platform !== 'all'
-      ? games.filter((game) => matchesQuery(game, trimmedQuery)).length
-      : 0
-  // 검색어와 정확히 같은 게임이 목록이나 요청에 이미 있으면 요청 버튼을 보여 주지 않는다.
-  const exactMatch =
-    games.some((game) =>
-      [game.name, ...game.aliases].some((label) => normalize(label) === normalize(trimmedQuery)),
-    ) || requestedGames.some((name) => normalize(name) === normalize(trimmedQuery))
-  const canRequest =
-    trimmedQuery.length > 0 && trimmedQuery.length <= MAX_REQUEST_LENGTH && !exactMatch
+  const isSearching = trimmedQuery.length > 0
+
+  const popularGames = games.slice(0, POPULAR_GAME_COUNT)
+  const suggestions = isSearching
+    ? games.filter((game) => matchesQuery(game, trimmedQuery)).slice(0, MAX_SUGGESTIONS)
+    : []
+  // "롤"처럼 목록에 있는 게임을 직접 입력하면 새로 만들지 않고 그 게임을 고르게 한다.
+  const exactGame = findExactGame(games, trimmedQuery)
+  const alreadyAdded = customGames.some((name) => normalize(name) === normalize(trimmedQuery))
+  const canAddCustom =
+    isSearching &&
+    normalize(trimmedQuery) !== '' &&
+    !exactGame &&
+    !alreadyAdded &&
+    customGames.length < MAX_CUSTOM_GAMES
 
   const selectedGames = games.filter((game) => selectedIds.has(game.id))
-  const hasSelection = selectedGames.length > 0 || requestedGames.length > 0
+  const hasSelection = selectedGames.length > 0 || customGames.length > 0
 
-  function handleRequest() {
-    onRequest(trimmedQuery)
+  function selectFromSearch(game) {
+    onToggle(game.id)
     setQuery('')
+  }
+
+  function addCustom() {
+    onAddCustom(trimmedQuery)
+    setQuery('')
+  }
+
+  function handleEnter() {
+    if (exactGame) {
+      if (!selectedIds.has(exactGame.id)) onToggle(exactGame.id)
+      setQuery('')
+    } else if (canAddCustom) {
+      addCustom()
+    }
   }
 
   return (
     <div className={styles.gameStep}>
+      {hasSelection && (
+        <section className={styles.selection} aria-label="고른 게임">
+          <ul className={styles.selectionList}>
+            {selectedGames.map((game) => (
+              <li key={game.id}>
+                <button
+                  type="button"
+                  className={styles.selectionChip}
+                  onClick={() => onToggle(game.id)}
+                  aria-label={`${game.name} 빼기`}
+                >
+                  {game.name}
+                  <span aria-hidden="true">✕</span>
+                </button>
+              </li>
+            ))}
+            {customGames.map((name) => (
+              <li key={name}>
+                <button
+                  type="button"
+                  className={styles.selectionChip}
+                  onClick={() => onRemoveCustom(name)}
+                  aria-label={`${name} 빼기`}
+                >
+                  {name}
+                  <span aria-hidden="true">✕</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <div className={styles.searchBox}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
@@ -56,126 +112,95 @@ export function GameStep({
         <input
           type="search"
           className={styles.searchInput}
-          placeholder="게임 이름 검색 (예: 롤, 배그, 메이플)"
-          aria-label="게임 이름 검색"
+          placeholder="다른 게임 검색 또는 직접 입력"
+          aria-label="게임 이름 검색 또는 직접 입력"
           value={query}
-          maxLength={MAX_REQUEST_LENGTH}
+          maxLength={MAX_GAME_NAME_LENGTH}
+          enterKeyHint="done"
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
-            if (
-              event.key === 'Enter' &&
-              visibleGames.length === 0 &&
-              otherPlatformCount === 0 &&
-              canRequest
-            )
-              handleRequest()
+            if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+              event.preventDefault()
+              handleEnter()
+            }
           }}
         />
       </div>
 
-      <div className={styles.platformTabs} role="group" aria-label="플랫폼">
-        {PLATFORMS.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            className={`${styles.platformTab} ${platform === item.key ? styles.platformTabActive : ''}`}
-            aria-pressed={platform === item.key}
-            onClick={() => setPlatform(item.key)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      {hasSelection && (
-        <section className={styles.selection} aria-label="고른 게임">
-          <ul className={styles.selectionList}>
-            {selectedGames.map((game) => (
-              <li key={game.id}>
-                <button
-                  type="button"
-                  className={styles.selectionChip}
-                  onClick={() => onToggle(game.id)}
-                  aria-label={`${game.name} 선택 해제`}
-                >
-                  {game.name}
-                  <span aria-hidden="true">✕</span>
-                </button>
-              </li>
-            ))}
-            {requestedGames.map((name) => (
-              <li key={name}>
-                <button
-                  type="button"
-                  className={`${styles.selectionChip} ${styles.selectionChipRequested}`}
-                  onClick={() => onRemoveRequest(name)}
-                  aria-label={`${name} 추가 요청 취소`}
-                >
-                  {name}
-                  <span className={styles.requestBadge}>요청</span>
-                  <span aria-hidden="true">✕</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          {requestedGames.length > 0 && (
-            <p className={styles.selectionNote}>
-              요청한 게임은 확인 후 목록에 추가돼요. 그 전에는 좋아하는 장르로 추천해 드려요.
-            </p>
-          )}
-        </section>
-      )}
-
-      {visibleGames.length > 0 ? (
-        <ul className={styles.gameGrid}>
-          {visibleGames.map((game) => {
+      {isSearching ? (
+        <ul className={styles.suggestions} aria-label="검색 결과">
+          {suggestions.map((game) => {
             const selected = selectedIds.has(game.id)
             return (
               <li key={game.id}>
                 <button
                   type="button"
-                  className={`${styles.gameCard} ${selected ? styles.gameCardSelected : ''}`}
+                  className={`${styles.suggestion} ${selected ? styles.suggestionSelected : ''}`}
                   aria-pressed={selected}
-                  onClick={() => onToggle(game.id)}
+                  onClick={() => selectFromSearch(game)}
                 >
-                  <GameTile name={game.name} genre={genreNameById.get(game.genre_id)} />
-                  <span className={styles.gameName}>{game.name}</span>
-                  <span className={styles.check} aria-hidden="true">
-                    ✓
-                  </span>
+                  <GameTile
+                    name={game.name}
+                    genre={genreNameById.get(game.genre_id)}
+                    className={styles.suggestionTile}
+                  />
+                  <span className={styles.suggestionName}>{game.name}</span>
+                  <span className={styles.suggestionAction}>{selected ? '선택됨' : '고르기'}</span>
                 </button>
               </li>
             )
           })}
+          {canAddCustom && (
+            <li>
+              <button
+                type="button"
+                className={`${styles.suggestion} ${styles.suggestionCustom}`}
+                onClick={addCustom}
+              >
+                <span className={styles.customTile} aria-hidden="true">
+                  +
+                </span>
+                <span className={styles.suggestionName}>‘{trimmedQuery}’ 직접 추가</span>
+              </button>
+            </li>
+          )}
+          {alreadyAdded && <li className={styles.suggestionNote}>이미 추가한 게임이에요.</li>}
+          {!exactGame && !alreadyAdded && customGames.length >= MAX_CUSTOM_GAMES && (
+            <li className={styles.suggestionNote}>
+              게임은 {MAX_CUSTOM_GAMES}개까지 직접 추가할 수 있어요.
+            </li>
+          )}
         </ul>
       ) : (
-        <div className={styles.empty}>
-          <p className={styles.emptyTitle}>
-            {otherPlatformCount > 0
-              ? '이 플랫폼에는 없지만 다른 플랫폼에 있어요'
-              : trimmedQuery
-                ? `‘${trimmedQuery}’ 게임이 목록에 없어요`
-                : '이 플랫폼의 게임이 없어요'}
+        <section aria-labelledby="popular-games-title" className={styles.popular}>
+          <h2 id="popular-games-title" className={styles.popularTitle}>
+            인기 게임
+          </h2>
+          <ul className={styles.gameGrid}>
+            {popularGames.map((game) => {
+              const selected = selectedIds.has(game.id)
+              return (
+                <li key={game.id}>
+                  <button
+                    type="button"
+                    className={`${styles.gameCard} ${selected ? styles.gameCardSelected : ''}`}
+                    aria-pressed={selected}
+                    onClick={() => onToggle(game.id)}
+                  >
+                    <GameTile name={game.name} genre={genreNameById.get(game.genre_id)} />
+                    <span className={styles.gameName}>{game.name}</span>
+                    <span className={styles.check} aria-hidden="true">
+                      ✓
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+          <p className={styles.popularHint}>
+            여기 없는 게임은 위 검색창에 이름을 입력해서 추가하세요.
           </p>
-          {otherPlatformCount > 0 ? (
-            <button
-              type="button"
-              className={styles.requestButton}
-              onClick={() => setPlatform('all')}
-            >
-              전체에서 {otherPlatformCount}개 보기
-            </button>
-          ) : (
-            canRequest && (
-              <>
-                <p className={styles.emptyText}>추가를 요청하면 확인 후 목록에 넣어 드려요.</p>
-                <button type="button" className={styles.requestButton} onClick={handleRequest}>
-                  ‘{trimmedQuery}’ 추가 요청하기
-                </button>
-              </>
-            )
-          )}
-        </div>
+        </section>
       )}
     </div>
   )

@@ -220,7 +220,7 @@
 }
 
 .gameTile,
-.requestedTile {
+.customTile {
   flex: none;
   width: 40px;
   aspect-ratio: 1;
@@ -234,7 +234,7 @@
   transform: translate(-50%, 50%);
 }
 
-.requestedTile {
+.customTile {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -243,13 +243,6 @@
   color: var(--color-primary-strong);
   font-size: 18px;
   font-weight: 700;
-}
-
-.badge {
-  display: block;
-  color: var(--color-text-tertiary);
-  font-size: 12px;
-  font-weight: 500;
 }
 
 /* 태그 */
@@ -283,31 +276,31 @@
   font-weight: 700;
 }
 
-/* 접속 시간 막대 */
-.hourRow {
+/* 접속 시간 막대: 요일마다 한 줄 */
+.hourList {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.hourLabel {
-  display: flex;
-  flex-wrap: wrap;
+.hourRow {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  align-items: center;
   gap: var(--space-2);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
 }
 
-.hourText {
+.hourDay {
   color: var(--color-text-secondary);
-  font-weight: 500;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
 }
 
 .hourBar {
   display: grid;
   grid-template-columns: repeat(24, 1fr);
   gap: 2px;
-  height: 20px;
+  height: 16px;
 }
 
 .hourOn,
@@ -326,6 +319,7 @@
 .hourAxis {
   display: flex;
   justify-content: space-between;
+  margin-left: calc(20px + var(--space-2));
   color: var(--color-text-tertiary);
   font-size: 11px;
 }

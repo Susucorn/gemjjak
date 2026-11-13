@@ -9,10 +9,8 @@ import { useLoader } from '../hooks/useLoader'
 import { isDiscordUser, signOut } from '../services/authService'
 import { fetchMyPreferences, fetchPreferenceOptions } from '../services/preferencesService'
 import { SERVER_STATUS_LABEL, fetchMyServers } from '../services/serverService'
-import { DAY_TYPES, HOURS, describeHours } from './onboarding/hours'
+import { DAYS, HOURS, describeHours, totalHours } from './onboarding/hours'
 import styles from './Profile.module.css'
-
-const WEEKLY_DAYS = { weekday: 5, weekend: 2 }
 
 export function Profile() {
   const { user, profile } = useAuth()
@@ -108,16 +106,18 @@ function ProfileDetails({ options, prefs, servers }) {
   const myGames = options.games.filter((game) => prefs.gameIds.has(game.id))
   const myGenres = options.genres.filter((genre) => prefs.genreIds.has(genre.id))
   const categoryOf = new Map(options.vocabulary.map((item) => [item.tag, item.category]))
-  const tagsIn = (category) => [...prefs.tags].filter((tag) => categoryOf.get(tag) === category)
-  const weeklyHours =
-    prefs.hours.weekday.size * WEEKLY_DAYS.weekday + prefs.hours.weekend.size * WEEKLY_DAYS.weekend
+  const tagsIn = (category) => [
+    ...[...prefs.tags].filter((tag) => categoryOf.get(tag) === category),
+    ...prefs.customTags[category],
+  ]
+  const weeklyHours = totalHours(prefs.hours)
 
   return (
     <>
       <dl className={styles.stats}>
         <div className={styles.stat}>
           <dt>하는 게임</dt>
-          <dd>{myGames.length + prefs.requestedGames.length}개</dd>
+          <dd>{myGames.length + prefs.customGames.length}개</dd>
         </div>
         <div className={styles.stat}>
           <dt>주간 접속</dt>
@@ -142,31 +142,34 @@ function ProfileDetails({ options, prefs, servers }) {
                 <span>{game.name}</span>
               </li>
             ))}
-            {prefs.requestedGames.map((name) => (
-              <li key={name} className={`${styles.gameItem} ${styles.gameItemRequested}`}>
-                <span className={styles.requestedTile} aria-hidden="true">
+            {prefs.customGames.map((name) => (
+              <li key={name} className={styles.gameItem}>
+                <span className={styles.customTile} aria-hidden="true">
                   {name.slice(0, 1)}
                 </span>
-                <span>
-                  {name}
-                  <span className={styles.badge}>추가 확인 중</span>
-                </span>
+                <span>{name}</span>
               </li>
             ))}
           </ul>
         </Section>
 
         <Section title="플레이 스타일" editTo="/profile/edit/style">
-          <TagRow label="좋아하는 장르" tags={myGenres.map((genre) => genre.name)} />
+          <TagRow
+            label="좋아하는 장르"
+            tags={[...myGenres.map((genre) => genre.name), ...prefs.customGenres]}
+          />
           <TagRow label="스타일" tags={tagsIn('style')} />
           <TagRow label="콘텐츠" tags={tagsIn('activity')} />
           <TagRow label="찾는 사람" tags={tagsIn('want')} />
         </Section>
 
         <Section title="접속 시간" editTo="/profile/edit/time">
-          {DAY_TYPES.map((type) => (
-            <HourBar key={type.key} label={type.label} hours={prefs.hours[type.key]} />
-          ))}
+          <div className={styles.hourList}>
+            {DAYS.map((day) => (
+              <HourBar key={day.key} label={day.label} hours={prefs.hours[day.key]} />
+            ))}
+            <HourAxis />
+          </div>
         </Section>
 
         <Section
@@ -243,26 +246,32 @@ function TagRow({ label, tags }) {
   )
 }
 
-/** 24칸 막대. 색칠된 칸이 접속하는 시간이다. */
+/** 요일 한 줄: 요일 이름 + 24칸 막대. 색칠된 칸이 접속하는 시간이다. */
 function HourBar({ label, hours }) {
   return (
     <div className={styles.hourRow}>
-      <p className={styles.hourLabel}>
-        <span>{label}</span>
-        <span className={styles.hourText}>{describeHours(hours)}</span>
-      </p>
-      <div className={styles.hourBar} aria-hidden="true">
+      <span className={styles.hourDay}>{label}</span>
+      <div
+        className={styles.hourBar}
+        role="img"
+        aria-label={`${label}요일 ${describeHours(hours)}`}
+      >
         {HOURS.map((hour) => (
           <span key={hour} className={hours.has(hour) ? styles.hourOn : styles.hourOff} />
         ))}
       </div>
-      <div className={styles.hourAxis} aria-hidden="true">
-        <span>0시</span>
-        <span>6시</span>
-        <span>12시</span>
-        <span>18시</span>
-        <span>24시</span>
-      </div>
+    </div>
+  )
+}
+
+function HourAxis() {
+  return (
+    <div className={styles.hourAxis} aria-hidden="true">
+      <span>0시</span>
+      <span>6시</span>
+      <span>12시</span>
+      <span>18시</span>
+      <span>24시</span>
     </div>
   )
 }

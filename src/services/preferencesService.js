@@ -1,9 +1,10 @@
 import { supabase } from '../lib/supabaseClient'
+import { emptyHours } from '../pages/onboarding/hours'
 
 export async function fetchGames() {
   const { data, error } = await supabase
     .from('games')
-    .select('id, name, genre_id, platforms, aliases')
+    .select('id, name, genre_id, aliases')
     .order('sort_order')
     .order('id')
   if (error) throw error
@@ -38,64 +39,71 @@ export async function fetchPreferenceOptions() {
 
 /**
  * 내가 저장한 취향을 온보딩 입력과 같은 모양으로 돌려준다.
- * 접속 시간은 평일(월~금)이 모두 같고 주말(토·일)이 모두 같게 저장되므로 월요일과 토요일만 읽는다.
+ * 접속 시간은 요일별 { 1: Set, ..., 7: Set }으로 돌려준다.
  */
 export async function fetchMyPreferences(userId) {
-  const [games, genres, requests, availability, profile] = await Promise.all([
-    supabase.from('user_games').select('game_id').eq('user_id', userId),
-    supabase.from('user_genres').select('genre_id').eq('user_id', userId),
-    supabase
-      .from('game_requests')
-      .select('name')
-      .eq('user_id', userId)
-      .eq('status', 'pending')
-      .order('created_at'),
-    supabase
-      .from('availability')
-      .select('weekday, start_hour, end_hour')
-      .eq('user_id', userId)
-      .in('weekday', [1, 6]),
-    supabase.from('profiles').select('tags').eq('id', userId).single(),
-  ])
-  for (const result of [games, genres, requests, availability, profile]) {
+  const [games, genres, customGames, customGenres, customTags, availability, profile] =
+    await Promise.all([
+      supabase.from('user_games').select('game_id').eq('user_id', userId),
+      supabase.from('user_genres').select('genre_id').eq('user_id', userId),
+      supabase.from('user_custom_games').select('name').eq('user_id', userId).order('created_at'),
+      supabase.from('user_custom_genres').select('name').eq('user_id', userId).order('created_at'),
+      supabase
+        .from('user_custom_tags')
+        .select('category, name')
+        .eq('user_id', userId)
+        .order('created_at'),
+      supabase.from('availability').select('weekday, start_hour, end_hour').eq('user_id', userId),
+      supabase.from('profiles').select('tags').eq('id', userId).single(),
+    ])
+  const results = [games, genres, customGames, customGenres, customTags, availability, profile]
+  for (const result of results) {
     if (result.error) throw result.error
   }
 
-  const hours = { weekday: new Set(), weekend: new Set() }
+  const hours = emptyHours()
   for (const slot of availability.data) {
-    const target = slot.weekday === 6 ? hours.weekend : hours.weekday
-    for (let hour = slot.start_hour; hour < slot.end_hour; hour += 1) target.add(hour)
+    for (let hour = slot.start_hour; hour < slot.end_hour; hour += 1) hours[slot.weekday].add(hour)
   }
 
   return {
     gameIds: new Set(games.data.map((row) => row.game_id)),
-    requestedGames: requests.data.map((row) => row.name),
+    customGames: customGames.data.map((row) => row.name),
     genreIds: new Set(genres.data.map((row) => row.genre_id)),
+    customGenres: customGenres.data.map((row) => row.name),
     tags: new Set(profile.data.tags),
+    customTags: {
+      style: customTags.data.filter((row) => row.category === 'style').map((row) => row.name),
+      activity: customTags.data.filter((row) => row.category === 'activity').map((row) => row.name),
+      want: customTags.data.filter((row) => row.category === 'want').map((row) => row.name),
+    },
     hours,
   }
 }
 
 /**
  * 게임·장르·태그·접속 시간을 한 번에 저장하고 온보딩을 완료 처리한다.
- * requestedGames는 목록에 없어 추가를 요청한 게임 이름이다. 여기에 없는 확인 전 요청은 취소된다.
- * weekdayHours/weekendHours는 0~23 시각 배열이다. 7은 7시~8시를 뜻한다.
+ * customGames·customGenres는 목록에 없어 직접 입력한 이름이다. 기존 것과 같으면 DB가 그것으로 바꾼다.
+ * customTags는 분류별로 직접 입력한 태그 { style: [], activity: [], want: [] }다.
+ * hours는 요일(1=월 ~ 7=일)별 0~23 시각 배열 { 1: [20, 21], ... }이다. 7은 7시~8시를 뜻한다.
  */
 export async function saveMyPreferences({
   gameIds,
-  requestedGames,
+  customGames,
   genreIds,
+  customGenres,
   tags,
-  weekdayHours,
-  weekendHours,
+  customTags,
+  hours,
 }) {
   const { error } = await supabase.rpc('save_my_preferences', {
     p_game_ids: gameIds,
-    p_requested_games: requestedGames,
+    p_custom_games: customGames,
     p_genre_ids: genreIds,
+    p_custom_genres: customGenres,
     p_tags: tags,
-    p_weekday_hours: weekdayHours,
-    p_weekend_hours: weekendHours,
+    p_custom_tags: customTags,
+    p_hours: hours,
   })
   if (error) throw error
 }

@@ -17,11 +17,11 @@ export function PreferenceStep({ step, options, prefs, onChange }) {
         games={options.games}
         genreNameById={new Map(options.genres.map((genre) => [genre.id, genre.name]))}
         selectedIds={prefs.gameIds}
-        requestedGames={prefs.requestedGames}
+        customGames={prefs.customGames}
         onToggle={(id) => update('gameIds', (ids) => toggleInSet(ids, id))}
-        onRequest={(name) => update('requestedGames', (names) => [...names, name])}
-        onRemoveRequest={(name) =>
-          update('requestedGames', (names) => names.filter((item) => item !== name))
+        onAddCustom={(name) => update('customGames', (names) => [...names, name])}
+        onRemoveCustom={(name) =>
+          update('customGames', (names) => names.filter((item) => item !== name))
         }
       />
     )
@@ -33,10 +33,25 @@ export function PreferenceStep({ step, options, prefs, onChange }) {
         genres={options.genres}
         selectedGenreIds={prefs.genreIds}
         onToggleGenre={(id) => update('genreIds', (ids) => toggleInSet(ids, id))}
+        customGenres={prefs.customGenres}
+        onAddCustomGenre={(name) => update('customGenres', (names) => [...names, name])}
+        onRemoveCustomGenre={(name) =>
+          update('customGenres', (names) => names.filter((item) => item !== name))
+        }
         vocabulary={options.vocabulary}
         selectedGameIds={prefs.gameIds}
         selectedTags={prefs.tags}
         onToggleTag={(tag) => update('tags', (tags) => toggleInSet(tags, tag))}
+        customTags={prefs.customTags}
+        onAddCustomTag={(category, name) =>
+          update('customTags', (all) => ({ ...all, [category]: [...all[category], name] }))
+        }
+        onRemoveCustomTag={(category, name) =>
+          update('customTags', (all) => ({
+            ...all,
+            [category]: all[category].filter((item) => item !== name),
+          }))
+        }
       />
     )
   }
@@ -44,10 +59,15 @@ export function PreferenceStep({ step, options, prefs, onChange }) {
   return (
     <TimeStep
       hours={prefs.hours}
-      onToggleHour={(dayType, hour) =>
-        update('hours', (hours) => ({ ...hours, [dayType]: toggleInSet(hours[dayType], hour) }))
+      onToggleHour={(day, hour) =>
+        update('hours', (hours) => ({ ...hours, [day]: toggleInSet(hours[day], hour) }))
       }
-      onSetHours={(dayType, next) => update('hours', (hours) => ({ ...hours, [dayType]: next }))}
+      onSetHours={(days, next) =>
+        update('hours', (hours) => ({
+          ...hours,
+          ...Object.fromEntries(days.map((day) => [day, new Set(next)])),
+        }))
+      }
     />
   )
 }
