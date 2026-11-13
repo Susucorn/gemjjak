@@ -7,6 +7,7 @@ import { useLoader } from '../../hooks/useLoader'
 import {
   fetchMyPreferences,
   fetchPreferenceOptions,
+  preferenceErrorMessage,
   saveMyPreferences,
 } from '../../services/preferencesService'
 import { PreferenceStep } from '../onboarding/PreferenceStep'
@@ -45,13 +46,33 @@ export function PreferenceEdit() {
   )
 }
 
-function PreferenceEditForm({ step, options, initial }) {
+/**
+ * 한 항목만 고치는 화면이지만 저장은 게임·스타일·시간을 한꺼번에 한다.
+ * 그래서 다른 항목이 비어 있으면(예: 장르 기능이 생기기 전에 가입해 장르가 없는 경우) 저장이 막힌다.
+ * 그때는 무엇이 비었는지 알려 주고, 같은 화면에서 그 항목으로 바꿔 채우게 한다. 고친 내용은 그대로 남는다.
+ */
+function PreferenceEditForm({ step: initialStep, options, initial }) {
   const navigate = useNavigate()
   const { refreshProfile } = useAuth()
+  const [step, setStep] = useState(initialStep)
   const [prefs, setPrefs] = useState(initial)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const current = PREFERENCE_STEPS[step]
+
+  const ownRequirement = stepRequirement(step, prefs, options.vocabulary)
+  const missingStep = PREFERENCE_STEPS.findIndex(
+    (_, index) => index !== step && stepRequirement(index, prefs, options.vocabulary),
+  )
+  const requirement =
+    ownRequirement ??
+    (missingStep === -1
+      ? null
+      : `${PREFERENCE_STEPS[missingStep].editTitle}이 비어 있어요. ${stepRequirement(
+          missingStep,
+          prefs,
+          options.vocabulary,
+        )}`)
 
   async function handleSubmit() {
     setIsSaving(true)
@@ -59,9 +80,11 @@ function PreferenceEditForm({ step, options, initial }) {
     try {
       await saveMyPreferences(toSavePayload(prefs, options.vocabulary))
       await refreshProfile()
-      navigate('/profile', { state: { notice: `${current.editTitle}을 저장했어요` } })
-    } catch {
-      setSaveError('저장하지 못했어요. 잠시 후 다시 시도해 주세요.')
+      navigate('/profile', {
+        state: { notice: `${PREFERENCE_STEPS[initialStep].editTitle}을 저장했어요` },
+      })
+    } catch (error) {
+      setSaveError(preferenceErrorMessage(error))
       setIsSaving(false)
     }
   }
@@ -71,9 +94,23 @@ function PreferenceEditForm({ step, options, initial }) {
       title={`${current.editTitle} 수정`}
       description={current.description}
       error={saveError}
-      requirement={stepRequirement(step, prefs, options.vocabulary)}
+      requirement={requirement}
       isSaving={isSaving}
       onSubmit={handleSubmit}
+      extraAction={
+        !ownRequirement &&
+        missingStep !== -1 && (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setStep(missingStep)
+              window.scrollTo(0, 0)
+            }}
+          >
+            {PREFERENCE_STEPS[missingStep].editTitle} 채우기
+          </Button>
+        )
+      }
     >
       <PreferenceStep step={step} options={options} prefs={prefs} onChange={setPrefs} />
     </EditScreen>

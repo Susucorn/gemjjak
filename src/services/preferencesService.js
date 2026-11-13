@@ -107,3 +107,20 @@ export async function saveMyPreferences({
   })
   if (error) throw error
 }
+
+// save_my_preferences가 내는 오류 메시지(영문) → 사용자에게 보여 줄 문장
+const SAVE_ERRORS = [
+  ['select at least one game', '게임을 1개 이상 골라 주세요.'],
+  ['select at least one genre', '좋아하는 장르를 1개 이상 골라 주세요.'],
+  ['select at least one style tag', '플레이 스타일을 1개 이상 골라 주세요.'],
+  ['select at least one hour', '접속 시간을 1칸 이상 골라 주세요.'],
+  ['too many custom', '직접 추가한 항목이 너무 많아요. 몇 개를 빼 주세요.'],
+  ['too long', '직접 추가한 이름이 너무 길어요.'],
+  ['login required', '로그인이 끊겼어요. 다시 로그인해 주세요.'],
+]
+
+export function preferenceErrorMessage(error) {
+  const message = error?.message ?? ''
+  const match = SAVE_ERRORS.find(([key]) => message.includes(key))
+  return match ? match[1] : '저장하지 못했어요. 잠시 후 다시 시도해 주세요.'
+}
