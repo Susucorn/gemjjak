@@ -323,9 +323,11 @@ export function Login() {
                   {String(number + 1).padStart(2, '0')}
                 </span>
                 <h2 id={`${feature.id}-title`} className={styles.featureTitle}>
-                  {feature.title[0]}
-                  <br />
-                  {feature.title[1]}
+                  <span className={styles.titleMark}>
+                    {feature.title[0]}
+                    <br />
+                    {feature.title[1]}
+                  </span>
                 </h2>
               </div>
               <p className={styles.featureBody}>{feature.body}</p>

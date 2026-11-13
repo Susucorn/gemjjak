@@ -274,6 +274,14 @@
   letter-spacing: -0.02em;
 }
 
+/* 핵심 설명 문장 강조: 글자 아래쪽에 형광펜처럼 칠한다. 두 줄이면 줄마다 따로 칠해진다. */
+.titleMark {
+  padding: 0 4px;
+  background: linear-gradient(transparent 55%, #ffe39a 55%);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
 .featureBody {
   color: var(--color-text-secondary);
   line-height: 1.7;
