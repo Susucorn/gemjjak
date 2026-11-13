@@ -38,19 +38,6 @@
   text-decoration: none;
 }
 
-.topCta {
-  display: inline-flex;
-  align-items: center;
-  min-height: 40px;
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-chip);
-  background: var(--color-text-primary);
-  color: var(--color-bg);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  text-decoration: none;
-}
-
 /* 히어로 */
 .hero {
   display: grid;

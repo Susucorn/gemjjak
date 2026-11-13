@@ -17,7 +17,7 @@ import {
 import styles from './landing/Landing.module.css'
 
 // 첫 화면은 겜짝이 무엇을 해 주는지 스크롤하며 차례로 보여 주는 소개 페이지다.
-// 로그인 버튼은 맨 아래(07 시작하기)에만 있고, 상단 헤더와 히어로의 [시작하기]는 그곳으로 이동한다.
+// 로그인 버튼은 맨 아래(07 시작하기)에만 있고, 히어로의 [시작하기]와 목차의 07은 그곳으로 이동한다.
 const FEATURES = [
   {
     id: 'score',
@@ -280,9 +280,6 @@ export function Login() {
         <a href="#top" className={styles.logo}>
           겜짝
         </a>
-        <a href="#start" className={styles.topCta}>
-          시작하기
-        </a>
       </header>
 
       <main>
@@ -300,7 +297,7 @@ export function Login() {
             </p>
             {/* 로그인에 실패하면 이 화면 맨 위로 돌아오므로 오류 안내는 여기에도 보여 준다. */}
             {alerts}
-            {/* 로그인 버튼은 맨 아래 07 시작하기에만 둔다. 상단 헤더의 [시작하기]와 같은 곳으로 간다. */}
+            {/* 로그인 버튼은 맨 아래 07 시작하기에만 둔다. */}
             <a href="#start" className={styles.heroCta}>
               시작하기
             </a>
