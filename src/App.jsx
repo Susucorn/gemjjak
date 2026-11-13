@@ -13,6 +13,7 @@ import { Explore } from './pages/Explore'
 import { Home } from './pages/Home'
 import { Login } from './pages/Login'
 import { Onboarding } from './pages/Onboarding'
+import { PlayerProfile } from './pages/PlayerProfile'
 import { Profile } from './pages/Profile'
 import { PreferenceEdit } from './pages/profile/PreferenceEdit'
 import { ProfileInfoEdit } from './pages/profile/ProfileInfoEdit'
@@ -40,6 +41,7 @@ export default function App() {
                 <Route path="/chat/:roomId" element={<Chat />} />
                 <Route path="/community" element={<Community />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/users/:userId" element={<PlayerProfile />} />
               </Route>
 
               {/* 프로필 수정 화면은 탭바 없이 전체 화면으로 띄운다. */}

@@ -60,6 +60,7 @@ function Recommendations({ me, others }) {
   const chatProps = (player) => ({
     onChat: () => handleChat(player.id),
     isStartingChat: startingId === player.id,
+    profileTo: `/users/${player.id}`,
   })
 
   if (!me) {

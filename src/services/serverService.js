@@ -76,3 +76,15 @@ export function serverErrorMessage(error) {
   if (error?.code === '23514') return '입력한 내용을 다시 확인해 주세요.'
   return '저장하지 못했어요. 잠시 후 다시 시도해 주세요.'
 }
+
+/** 다른 사용자가 등록해 공개된 서버. 승인 전 서버는 RLS 때문에 본인에게만 보인다. */
+export async function fetchApprovedServersOf(ownerId) {
+  const { data, error } = await supabase
+    .from('servers')
+    .select('id, name, game_id, description, invite_url, member_count, online_count')
+    .eq('owner_id', ownerId)
+    .eq('status', 'approved')
+    .order('created_at')
+  if (error) throw error
+  return data
+}
