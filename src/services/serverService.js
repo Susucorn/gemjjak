@@ -77,6 +77,21 @@ export function serverErrorMessage(error) {
   return '저장하지 못했어요. 잠시 후 다시 시도해 주세요.'
 }
 
+/**
+ * 커뮤니티 탭에 보여 줄 서버. RLS 때문에 공개(승인)된 서버와 내가 등록한 서버만 온다.
+ * owner는 등록한 사용자. 관리자가 넣은 서버는 owner가 null이다.
+ */
+export async function fetchCommunityServers() {
+  const { data, error } = await supabase
+    .from('servers')
+    .select(
+      'id, name, game_id, description, invite_url, member_count, online_count, status, owner_id, owner:profiles(nickname)',
+    )
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
 /** 다른 사용자가 등록해 공개된 서버. 승인 전 서버는 RLS 때문에 본인에게만 보인다. */
 export async function fetchApprovedServersOf(ownerId) {
   const { data, error } = await supabase

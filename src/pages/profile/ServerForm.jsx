@@ -16,6 +16,7 @@ import {
   serverErrorMessage,
   updateServer,
 } from '../../services/serverService'
+import { fetchInviteInfo } from '../../services/discordInvite'
 import { EditScreen } from './EditScreen'
 import styles from './ProfileForms.module.css'
 
@@ -83,14 +84,23 @@ function ServerFormFields({ games, server }) {
     setSaveError(null)
     const fields = { name, gameId, description, inviteUrl }
     try {
+      // 등록하면 바로 공개되므로 링크가 살아 있는지 디스코드에 먼저 물어본다.
+      // 디스코드에 연결하지 못했을 때는 막지 않는다. 커뮤니티 카드가 만료 여부를 다시 보여 준다.
+      if (!server || inviteChanged) {
+        const info = await fetchInviteInfo(inviteUrl).catch(() => null)
+        if (info?.valid === false) {
+          setSaveError(
+            '이 초대 링크는 만료됐거나 없는 링크예요. 디스코드에서 ‘만료 없음’ 링크를 새로 만들어 주세요.',
+          )
+          setIsSaving(false)
+          return
+        }
+      }
       if (server) await updateServer(server.id, fields)
       else await createServer(user.id, fields)
       navigate('/profile', {
         state: {
-          notice:
-            server && !inviteChanged
-              ? '서버 정보를 저장했어요'
-              : '등록했어요. 확인 후 커뮤니티에 공개돼요',
+          notice: server ? '서버 정보를 저장했어요' : '등록했어요. 커뮤니티 탭에 공개됐어요',
         },
       })
     } catch (error) {
@@ -118,7 +128,7 @@ function ServerFormFields({ games, server }) {
       description={
         server
           ? `지금 상태: ${SERVER_STATUS_LABEL[server.status]}`
-          : '운영하는 서버를 등록하면 확인 후 커뮤니티 탭에 공개돼요.'
+          : '운영하는 서버를 등록하면 바로 커뮤니티 탭에 공개돼요.'
       }
       error={saveError}
       requirement={requirement}
@@ -185,9 +195,6 @@ function ServerFormFields({ games, server }) {
               ? 'discord.gg/… 또는 discord.com/invite/… 형식의 링크를 넣어 주세요.'
               : '디스코드 서버 → 초대하기 → 링크 편집에서 만료 기간을 ‘만료 없음’으로 바꾼 뒤 복사해 주세요.'}
           </span>
-          {inviteChanged && server.status !== 'pending' && (
-            <span className={styles.help}>링크를 바꾸면 다시 확인을 받아야 공개돼요.</span>
-          )}
         </label>
 
         <label className={styles.field}>
