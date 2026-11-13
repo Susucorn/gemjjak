@@ -37,6 +37,7 @@ export default function App() {
                 <Route index element={<Home />} />
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/chat" element={<Chat />} />
+                <Route path="/chat/:roomId" element={<Chat />} />
                 <Route path="/community" element={<Community />} />
                 <Route path="/profile" element={<Profile />} />
               </Route>

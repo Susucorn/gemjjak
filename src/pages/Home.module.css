@@ -31,6 +31,14 @@
   text-align: center;
 }
 
+.alert {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--space-3);
+  background: #fff1f0;
+  color: #b42318;
+  font-size: var(--font-size-sm);
+}
+
 /* 내 취향 요약 */
 .summary {
   display: flex;

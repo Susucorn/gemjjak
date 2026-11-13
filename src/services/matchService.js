@@ -20,8 +20,20 @@ function groupByUser(rows) {
   return map
 }
 
-/** 나와 다른 사용자들을 궁합 계산용 모양으로 돌려준다. { me, others, catalog } */
-export async function fetchPlayers(myId) {
+/**
+ * 나와 다른 사용자들을 궁합 계산용 모양으로 돌려준다. { me, others, catalog }
+ * onlyIds를 주면 그 사용자들만 읽는다(채팅방 상단 궁합처럼 두 사람만 필요할 때).
+ */
+export async function fetchPlayers(myId, onlyIds = null) {
+  const byUser = (query) => (onlyIds ? query.in('user_id', onlyIds) : query)
+  let profileQuery = supabase
+    .from('profiles')
+    .select('id, nickname, avatar_url, bio, tags')
+    .eq('onboarded', true)
+    .order('created_at', { ascending: false })
+    .limit(MAX_PLAYERS)
+  if (onlyIds) profileQuery = profileQuery.in('id', onlyIds)
+
   const [
     profiles,
     games,
@@ -33,22 +45,17 @@ export async function fetchPlayers(myId) {
     customTags,
     slots,
   ] = await Promise.all([
-    selectAll(
-      supabase
-        .from('profiles')
-        .select('id, nickname, avatar_url, bio, tags')
-        .eq('onboarded', true)
-        .order('created_at', { ascending: false })
-        .limit(MAX_PLAYERS),
-    ),
+    selectAll(profileQuery),
     selectAll(supabase.from('games').select('id, name, genre_id')),
     selectAll(supabase.from('genres').select('id, name')),
-    selectAll(supabase.from('user_games').select('user_id, game_id')),
-    selectAll(supabase.from('user_custom_games').select('user_id, name')),
-    selectAll(supabase.from('user_genres').select('user_id, genre_id')),
-    selectAll(supabase.from('user_custom_genres').select('user_id, name')),
-    selectAll(supabase.from('user_custom_tags').select('user_id, category, name')),
-    selectAll(supabase.from('availability').select('user_id, weekday, start_hour, end_hour')),
+    selectAll(byUser(supabase.from('user_games').select('user_id, game_id'))),
+    selectAll(byUser(supabase.from('user_custom_games').select('user_id, name'))),
+    selectAll(byUser(supabase.from('user_genres').select('user_id, genre_id'))),
+    selectAll(byUser(supabase.from('user_custom_genres').select('user_id, name'))),
+    selectAll(byUser(supabase.from('user_custom_tags').select('user_id, category, name'))),
+    selectAll(
+      byUser(supabase.from('availability').select('user_id, weekday, start_hour, end_hour')),
+    ),
   ])
 
   const catalog = {

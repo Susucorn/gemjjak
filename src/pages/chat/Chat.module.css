@@ -1,0 +1,432 @@
+/* 모바일: 목록 화면과 대화방(전체 화면)을 따로 보여 준다. 1024px 이상: 2단 */
+
+.chat {
+  display: block;
+}
+
+/* 모바일에서 방을 열면 목록은 숨기고 대화방이 탭바까지 덮는다. */
+.chatWithRoom .list {
+  display: none;
+}
+
+.chatWithRoom .roomPanel {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+/* 데스크톱에서만 보이는 "대화를 고르세요" 자리. .roomPanel보다 뒤에 와도 지도록 두 클래스로 지정한다. */
+.roomPanel.noRoom {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   대화 목록
+   --------------------------------------------------------------------------- */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.listTitle {
+  padding-bottom: var(--space-4);
+  font-size: var(--font-size-xl);
+}
+
+.listStatus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  margin: auto;
+  padding: var(--space-8) var(--space-4);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.listEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.listEmptyTitle {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.listEmptyLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  margin-top: var(--space-2);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-button);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.rooms {
+  display: flex;
+  flex-direction: column;
+  margin: 0 calc(var(--space-2) * -1);
+  padding: 0;
+  list-style: none;
+}
+
+.room {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 72px;
+  padding: var(--space-2);
+  border-radius: var(--space-3);
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.room:hover {
+  background: var(--color-bg-subtle);
+}
+
+.roomActive {
+  background: var(--color-primary-soft);
+}
+
+.roomActive:hover {
+  background: var(--color-primary-soft);
+}
+
+.roomText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.roomTop,
+.roomBottom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.roomName {
+  flex: 1;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roomTime {
+  flex: none;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+
+.roomPreview {
+  flex: 1;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unread {
+  flex: none;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-chip);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
+/* ---------------------------------------------------------------------------
+   대화방
+   --------------------------------------------------------------------------- */
+
+.roomPanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--color-bg);
+}
+
+.roomHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 60px;
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  margin-left: calc(var(--space-3) * -1);
+  border-radius: 50%;
+  color: var(--color-text-primary);
+}
+
+.roomHeaderText {
+  flex: 1;
+  min-width: 0;
+}
+
+.roomHeaderName {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.roomHeaderBio {
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 상단 매칭 근거 */
+.matchBanner {
+  margin: var(--space-3) var(--space-4) 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--space-3);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+  font-size: 12px;
+}
+
+.matchBanner strong {
+  font-weight: 700;
+}
+
+.messages {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-4);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.messagesEmpty {
+  margin: auto;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.divider {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-2) 0;
+}
+
+.divider span {
+  padding: 4px var(--space-3);
+  border-radius: var(--radius-chip);
+  background: var(--color-bg-muted);
+  color: var(--color-text-tertiary-on-gray);
+  font-size: 12px;
+}
+
+.message {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: 80%;
+}
+
+.mine {
+  flex-direction: row-reverse;
+  align-self: flex-end;
+}
+
+.theirs {
+  align-self: flex-start;
+}
+
+.bubble {
+  padding: var(--space-2) var(--space-3);
+  border-radius: 18px;
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mine .bubble {
+  border-bottom-right-radius: 4px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.theirs .bubble {
+  border-bottom-left-radius: 4px;
+  background: var(--color-bg-muted);
+  color: var(--color-text-primary);
+}
+
+.time {
+  flex: none;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+}
+
+/* 입력 영역 */
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-border);
+}
+
+.quickReplies {
+  display: flex;
+  gap: 6px;
+  margin: 0 calc(var(--space-4) * -1);
+  padding: 0 var(--space-4);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.quickReplies::-webkit-scrollbar {
+  display: none;
+}
+
+.quickReply {
+  flex: none;
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-chip);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.quickReply:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary-strong);
+}
+
+.sendError {
+  color: #b42318;
+  font-size: var(--font-size-sm);
+}
+
+.inputRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-target);
+  max-height: 120px;
+  padding: 10px var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+  font: inherit;
+  line-height: 1.5;
+  resize: none;
+  field-sizing: content;
+}
+
+.input:focus {
+  border-color: var(--color-primary-strong);
+  outline: 2px solid var(--color-primary-strong);
+  outline-offset: -1px;
+  background: var(--color-bg);
+}
+
+.sendButton {
+  flex: none;
+  min-width: 64px;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: 22px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sendButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ---------------------------------------------------------------------------
+   데스크톱: 목록 + 대화방 2단
+   --------------------------------------------------------------------------- */
+@media (min-width: 1024px) {
+  .chat {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    height: calc(100dvh - var(--space-8) * 2);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-bg);
+  }
+
+  .list {
+    padding: var(--space-5) var(--space-4);
+    overflow-y: auto;
+    border-right: 1px solid var(--color-border);
+  }
+
+  .chatWithRoom .list {
+    display: flex;
+  }
+
+  .chatWithRoom .roomPanel {
+    position: static;
+  }
+
+  .roomPanel.noRoom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-tertiary);
+  }
+
+  .backLink {
+    display: none;
+  }
+}

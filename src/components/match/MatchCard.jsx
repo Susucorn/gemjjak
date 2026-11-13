@@ -4,8 +4,9 @@ import styles from './MatchCard.module.css'
 /**
  * 추천 게이머 카드. 궁합 %와 게이지, 공통점 태그, 추천 근거를 함께 보여 준다.
  * compact는 "나와 유사한 플레이어" 2열 그리드용 작은 카드다.
+ * onChat을 넘기면 [채팅하기] 버튼을 붙인다. 소개 페이지의 예시 카드에는 넘기지 않는다.
  */
-export function MatchCard({ player, match, compact = false }) {
+export function MatchCard({ player, match, compact = false, onChat, isStartingChat = false }) {
   const games = [...player.games.values()]
   // 공통 태그를 먼저 보여 주고, 남는 자리는 그 사람의 다른 태그로 채운다.
   const tags = [...new Set([...match.commonTags, ...player.tags.values()])].slice(
@@ -66,6 +67,18 @@ export function MatchCard({ player, match, compact = false }) {
       )}
       {compact && match.reasons.length > 0 && (
         <p className={styles.compactReason}>{match.reasons[0]}</p>
+      )}
+      {onChat && (
+        <button
+          type="button"
+          className={styles.chatButton}
+          onClick={onChat}
+          disabled={isStartingChat}
+          aria-busy={isStartingChat}
+          aria-label={`${player.nickname}님과 채팅하기`}
+        >
+          {isStartingChat ? '여는 중…' : '채팅하기'}
+        </button>
       )}
     </article>
   )

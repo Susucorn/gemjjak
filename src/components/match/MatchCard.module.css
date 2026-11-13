@@ -125,3 +125,33 @@
   color: var(--color-text-secondary);
   font-size: 12px;
 }
+
+.chatButton {
+  min-height: var(--touch-target);
+  border: 0;
+  border-radius: var(--radius-button);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chatButton:hover:not(:disabled) {
+  background: var(--color-primary-strong);
+}
+
+.chatButton:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.compact .chatButton {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+}
+
+.compact .chatButton:hover:not(:disabled) {
+  background: var(--color-primary-soft);
+  text-decoration: underline;
+}
