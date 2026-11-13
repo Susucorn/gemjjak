@@ -11,10 +11,6 @@ export const DAYS = [
   { key: 7, label: '일' },
 ]
 
-export const WEEKDAY_KEYS = [1, 2, 3, 4, 5]
-export const WEEKEND_KEYS = [6, 7]
-export const ALL_DAY_KEYS = [...WEEKDAY_KEYS, ...WEEKEND_KEYS]
-
 export const TIME_PRESETS = [
   { label: '새벽', start: 0, end: 6 },
   { label: '오전', start: 6, end: 12 },

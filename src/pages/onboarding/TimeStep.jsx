@@ -1,26 +1,14 @@
 import { useState } from 'react'
 import { Chip } from '../../components/ui/Chip'
-import { Sheet } from '../../components/ui/Sheet'
-import {
-  ALL_DAY_KEYS,
-  DAYS,
-  HOURS,
-  TIME_PRESETS,
-  WEEKDAY_KEYS,
-  WEEKEND_KEYS,
-  dayLabel,
-  describeHours,
-  presetHours,
-} from './hours'
+import { DAYS, HOURS, TIME_PRESETS, dayLabel, describeHours, presetHours } from './hours'
 import styles from './Onboarding.module.css'
 
 /**
- * 요일마다 접속 시간을 고른다. 한 요일을 정한 뒤 [다른 요일에 복사]로 같은 시간을 여러 요일에 넣는다.
+ * 요일마다 접속 시간을 고른다. 위쪽 요일 탭으로 요일을 바꾸고, 아래 일주일 요약으로 전체를 확인한다.
  * hours: { 1: Set, ..., 7: Set }
  */
 export function TimeStep({ hours, onToggleHour, onSetHours }) {
   const [day, setDay] = useState(1)
-  const [isCopyOpen, setIsCopyOpen] = useState(false)
   const current = hours[day]
 
   function togglePreset(preset) {
@@ -103,25 +91,7 @@ export function TimeStep({ hours, onToggleHour, onSetHours }) {
         })}
       </div>
 
-      <button
-        type="button"
-        className={styles.copyButton}
-        onClick={() => setIsCopyOpen(true)}
-        disabled={current.size === 0}
-      >
-        {dayLabel(day)}요일 시간을 다른 요일에 복사
-      </button>
-
       <WeekSummary hours={hours} activeDay={day} onSelectDay={setDay} />
-
-      {isCopyOpen && (
-        <CopyDaysSheet
-          fromDay={day}
-          hours={current}
-          onApply={(days) => onSetHours(days, new Set(current))}
-          onClose={() => setIsCopyOpen(false)}
-        />
-      )}
     </div>
   )
 }
@@ -160,78 +130,5 @@ function WeekSummary({ hours, activeDay, onSelectDay }) {
         </span>
       </div>
     </section>
-  )
-}
-
-const QUICK_PICKS = [
-  { label: '평일 전체', days: WEEKDAY_KEYS },
-  { label: '주말 전체', days: WEEKEND_KEYS },
-  { label: '매일', days: ALL_DAY_KEYS },
-]
-
-/** 고른 요일들에 지금 요일의 시간을 똑같이 넣는다. 그 요일의 기존 시간은 바뀐다. */
-function CopyDaysSheet({ fromDay, hours, onApply, onClose }) {
-  const [targets, setTargets] = useState(() => new Set())
-  const candidates = ALL_DAY_KEYS.filter((key) => key !== fromDay)
-
-  function toggle(key) {
-    setTargets((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
-  }
-
-  function pick(days) {
-    const keys = days.filter((key) => key !== fromDay)
-    const allPicked = keys.every((key) => targets.has(key))
-    setTargets((prev) => {
-      const next = new Set(prev)
-      for (const key of keys) {
-        if (allPicked) next.delete(key)
-        else next.add(key)
-      }
-      return next
-    })
-  }
-
-  return (
-    <Sheet
-      title={`${dayLabel(fromDay)}요일 시간 복사`}
-      description={`${describeHours(hours)}을 고른 요일에 똑같이 넣어요. 그 요일에 정해 둔 시간은 바뀌어요.`}
-      submitLabel={targets.size > 0 ? `${targets.size}개 요일에 적용` : '적용'}
-      submitDisabled={targets.size === 0}
-      onSubmit={() => onApply([...targets])}
-      onClose={onClose}
-    >
-      <div className={styles.chips}>
-        {QUICK_PICKS.map((quick) => {
-          const keys = quick.days.filter((key) => key !== fromDay)
-          return (
-            <Chip
-              key={quick.label}
-              selected={keys.every((key) => targets.has(key))}
-              onClick={() => pick(quick.days)}
-            >
-              {quick.label}
-            </Chip>
-          )
-        })}
-      </div>
-      <div className={styles.copyDays} role="group" aria-label="복사할 요일">
-        {candidates.map((key) => (
-          <button
-            key={key}
-            type="button"
-            className={`${styles.copyDay} ${targets.has(key) ? styles.copyDayActive : ''}`}
-            aria-pressed={targets.has(key)}
-            onClick={() => toggle(key)}
-          >
-            {dayLabel(key)}
-          </button>
-        ))}
-      </div>
-    </Sheet>
   )
 }

@@ -535,27 +535,6 @@
   cursor: pointer;
 }
 
-.copyButton {
-  min-height: var(--touch-target);
-  border: 1px dashed var(--color-primary-strong);
-  border-radius: var(--radius-button);
-  background: var(--color-bg);
-  color: var(--color-primary-strong);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.copyButton:hover:not(:disabled) {
-  background: var(--color-primary-soft);
-}
-
-.copyButton:disabled {
-  border-color: var(--color-border);
-  color: var(--color-text-tertiary);
-  cursor: not-allowed;
-}
-
 /* 일주일 요약 */
 .week {
   display: flex;
@@ -621,29 +600,6 @@
   justify-content: space-between;
   color: var(--color-text-tertiary-on-gray);
   font-size: 11px;
-}
-
-/* 요일 복사 창 */
-.copyDays {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: var(--space-1);
-}
-
-.copyDay {
-  min-height: var(--touch-target);
-  border: 1px solid var(--color-border);
-  border-radius: var(--space-3);
-  background: var(--color-bg);
-  color: var(--color-text-primary);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.copyDayActive {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
 }
 
 .hourGrid {
