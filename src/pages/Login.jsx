@@ -17,7 +17,7 @@ import {
 import styles from './landing/Landing.module.css'
 
 // 첫 화면은 겜짝이 무엇을 해 주는지 스크롤하며 차례로 보여 주는 소개 페이지다.
-// 로그인 버튼은 맨 위(히어로)와 맨 아래(07 시작하기)에 있고, 상단 헤더의 [시작하기]는 맨 아래로 이동한다.
+// 로그인 버튼은 맨 아래(07 시작하기)에만 있고, 상단 헤더와 히어로의 [시작하기]는 그곳으로 이동한다.
 const FEATURES = [
   {
     id: 'score',
@@ -298,9 +298,12 @@ export function Login() {
               하는 게임, 접속 시간, 플레이 스타일로 궁합을 계산해 나와 맞는 게이머와 디스코드
               커뮤니티를 찾아 드려요.
             </p>
+            {/* 로그인에 실패하면 이 화면 맨 위로 돌아오므로 오류 안내는 여기에도 보여 준다. */}
             {alerts}
-            <AuthButtons redirectingTo={redirectingTo} onLogin={handleLogin} />
-            <p className={styles.note}>닉네임과 프로필 사진만 가져와요. 계정에 글을 쓰지 않아요.</p>
+            {/* 로그인 버튼은 맨 아래 07 시작하기에만 둔다. 상단 헤더의 [시작하기]와 같은 곳으로 간다. */}
+            <a href="#start" className={styles.heroCta}>
+              시작하기
+            </a>
           </div>
           <div className={styles.heroVisual}>
             <MatchVisual />
@@ -358,6 +361,7 @@ export function Login() {
             </ol>
             {alerts}
             <AuthButtons redirectingTo={redirectingTo} onLogin={handleLogin} />
+            <p className={styles.note}>닉네임과 프로필 사진만 가져와요. 계정에 글을 쓰지 않아요.</p>
           </Reveal>
         </section>
       </main>
