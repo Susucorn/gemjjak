@@ -152,9 +152,10 @@
   color: var(--color-primary-strong);
 }
 
+/* 평소에는 연한 버튼이고, 마우스를 올리면 한 단계 진해진다. */
 .compact .chatButton:hover:not(:disabled) {
-  background: var(--color-primary-soft);
-  text-decoration: underline;
+  background: #d6dafd;
+  color: var(--color-primary-strong);
 }
 
 /* 카드 전체를 누르면 프로필로 간다. 닉네임 링크의 ::after가 카드를 덮는다. */

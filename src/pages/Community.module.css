@@ -64,23 +64,54 @@
   font-weight: 700;
 }
 
-/* 게임별 보기: 모바일에서는 가로로 넘긴다. */
-.filters {
+/* 검색 */
+.searchRow {
   display: flex;
-  gap: 6px;
-  margin: 0 calc(var(--space-4) * -1);
-  padding: 0 var(--space-4);
-  overflow-x: auto;
-  scrollbar-width: none;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-.filters::-webkit-scrollbar {
-  display: none;
-}
-
-.filters > * {
+.searchRow > button {
   flex: none;
   white-space: nowrap;
+}
+
+.searchBox {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  left: var(--space-4);
+  color: var(--color-text-tertiary);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--space-4) 0 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.searchInput:focus {
+  border-color: var(--color-primary-strong);
+  outline: 2px solid var(--color-primary-strong);
+  outline-offset: -1px;
+}
+
+.resultCount {
+  margin-top: calc(var(--space-2) * -1);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
 }
 
 .empty {
@@ -277,12 +308,5 @@
 @media (min-width: 768px) {
   .list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .filters {
-    flex-wrap: wrap;
-    margin: 0;
-    padding: 0;
-    overflow: visible;
   }
 }

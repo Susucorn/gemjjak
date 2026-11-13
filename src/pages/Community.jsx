@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useLoader } from '../hooks/useLoader'
 import { supabase } from '../lib/supabaseClient'
 import { fetchInviteInfo } from '../services/discordInvite'
+import { normalize } from './onboarding/gameSearch'
 import { fetchGames } from '../services/preferencesService'
 import { fetchCommunityServers } from '../services/serverService'
 import styles from './Community.module.css'
@@ -60,39 +61,38 @@ export function Community() {
   )
 }
 
-const ALL = 'all'
-const MINE = 'mine'
+/**
+ * 서버 이름·설명·게임 이름·게임 별명에서 찾는다. 띄어쓰기·대소문자는 무시한다.
+ * 별명까지 보므로 '배그'로 배틀그라운드 서버를, '로아'로 로스트아크 서버를 찾는다.
+ */
+function matchesSearch(server, game, query) {
+  const q = normalize(query)
+  if (!q) return true
+  const labels = [server.name, server.description ?? '']
+  if (game) labels.push(game.name, ...(game.aliases ?? []))
+  return labels.some((label) => normalize(label).includes(q))
+}
 
 function ServerBrowser({ servers, gameById, myGameIds, myId }) {
-  const [filter, setFilter] = useState(ALL)
+  const [query, setQuery] = useState('')
+  const [onlyMine, setOnlyMine] = useState(false)
 
   const approved = servers.filter((server) => server.status === 'approved')
   const myHidden = servers.filter(
     (server) => server.owner_id === myId && server.status !== 'approved',
   )
-
-  // 서버가 있는 게임만 칩으로 보여 준다. 내 게임을 앞에 둔다.
-  const gameIds = [...new Set(approved.map((server) => server.game_id).filter(Boolean))]
-    .filter((id) => gameById.has(id))
-    .sort(
-      (a, b) =>
-        Number(myGameIds.has(b)) - Number(myGameIds.has(a)) ||
-        gameById.get(a).name.localeCompare(gameById.get(b).name),
-    )
   const hasMine = approved.some((server) => myGameIds.has(server.game_id))
 
   const visible = approved
-    .filter((server) => {
-      if (filter === ALL) return true
-      if (filter === MINE) return myGameIds.has(server.game_id)
-      return server.game_id === filter
-    })
+    .filter((server) => !onlyMine || myGameIds.has(server.game_id))
+    .filter((server) => matchesSearch(server, gameById.get(server.game_id), query))
     // 내 게임 서버를 먼저, 그다음 사람이 많은 순
     .sort(
       (a, b) =>
         Number(myGameIds.has(b.game_id)) - Number(myGameIds.has(a.game_id)) ||
         b.member_count - a.member_count,
     )
+  const searching = query.trim() !== '' || onlyMine
 
   return (
     <>
@@ -104,27 +104,46 @@ function ServerBrowser({ servers, gameById, myGameIds, myId }) {
       )}
 
       {approved.length > 0 && (
-        <div className={styles.filters} role="group" aria-label="게임별 보기">
-          <Chip selected={filter === ALL} onClick={() => setFilter(ALL)}>
-            전체 {approved.length}
-          </Chip>
+        <div className={styles.searchRow}>
+          <div className={styles.searchBox}>
+            <SearchIcon />
+            <input
+              type="search"
+              className={styles.searchInput}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="게임이나 서버 이름으로 찾기 (예: 배그, 롤)"
+              aria-label="서버 검색"
+              enterKeyHint="search"
+            />
+          </div>
           {hasMine && (
-            <Chip selected={filter === MINE} onClick={() => setFilter(MINE)}>
-              내 게임
+            <Chip selected={onlyMine} onClick={() => setOnlyMine((prev) => !prev)}>
+              내 게임만
             </Chip>
           )}
-          {gameIds.map((id) => (
-            <Chip key={id} selected={filter === id} onClick={() => setFilter(id)}>
-              {gameById.get(id).name}
-            </Chip>
-          ))}
         </div>
       )}
+      {searching && approved.length > 0 && (
+        <p className={styles.resultCount} role="status">
+          서버 {visible.length}개
+        </p>
+      )}
 
-      {visible.length === 0 ? (
+      {approved.length === 0 ? (
         <div className={styles.empty}>
           <p className={styles.emptyTitle}>아직 공개된 서버가 없어요</p>
           <p>운영하는 디스코드 서버가 있다면 등록해 보세요.</p>
+          <Link to="/profile/servers/new" className={styles.emptyLink}>
+            서버 등록하기
+          </Link>
+        </div>
+      ) : visible.length === 0 ? (
+        <div className={styles.empty}>
+          <p className={styles.emptyTitle}>
+            {query.trim() ? `‘${query.trim()}’ 서버를 찾지 못했어요` : '내 게임 서버가 없어요'}
+          </p>
+          <p>그 게임 서버를 운영하고 있다면 직접 등록해 보세요.</p>
           <Link to="/profile/servers/new" className={styles.emptyLink}>
             서버 등록하기
           </Link>
@@ -144,6 +163,24 @@ function ServerBrowser({ servers, gameById, myGameIds, myId }) {
         </ul>
       )}
     </>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg
+      className={styles.searchIcon}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20 20l-4-4" />
+    </svg>
   )
 }
 

@@ -12,8 +12,10 @@ import {
   filterEntry,
   filtersFromConditions,
   isEmptyFilters,
+  loadExploreState,
   matchFilters,
   popularOptions,
+  saveExploreState,
 } from '../lib/exploreFilters'
 import {
   AI_QUESTION_MAX_LENGTH,
@@ -23,6 +25,7 @@ import {
 import { startDirectChat } from '../services/chatService'
 import { fetchPlayers } from '../services/matchService'
 import { DAYS, TIME_PRESETS, dayLabel, presetHours } from './onboarding/hours'
+import { ResultPages } from './explore/ResultPages'
 import styles from './Explore.module.css'
 
 const EXAMPLES = [
@@ -40,7 +43,15 @@ export function Explore() {
   const { user } = useAuth()
   const load = useCallback(() => fetchPlayers(user.id), [user.id])
   const loaded = useLoader(load)
-  const [mode, setMode] = useState('ai')
+  const [mode, setModeState] = useState(() => loadExploreState()?.mode ?? 'ai')
+  // 처음 열 때는 움직이지 않고, 버튼으로 바꿀 때만 옆으로 밀어 넣는다.
+  const [flipped, setFlipped] = useState(false)
+  function setMode(next) {
+    if (next === mode) return
+    setModeState(next)
+    setFlipped(true)
+    saveExploreState({ mode: next })
+  }
 
   return (
     <div className={styles.page}>
@@ -77,7 +88,7 @@ export function Explore() {
         </div>
       )}
       {loaded.status === 'ready' && (
-        <ExploreBody {...loaded.data} mode={mode} onModeChange={setMode} />
+        <ExploreBody {...loaded.data} mode={mode} flipped={flipped} onModeChange={setMode} />
       )}
     </div>
   )
@@ -95,12 +106,23 @@ const MODES = [
   { key: 'filter', label: '필터로 찾기' },
 ]
 
-function ExploreBody({ me, others, catalog, mode, onModeChange: setMode }) {
+function ExploreBody({ me, others, catalog, mode, flipped, onModeChange: setMode }) {
+  // 프로필을 보고 돌아왔을 때 이어서 보도록 저장해 둔 조건을 불러온다.
+  const [saved] = useState(loadExploreState)
   // 필터 창에서 고르는 중인 조건
-  const [draft, setDraft] = useState(emptyFilters)
+  const [draft, setDraft] = useState(() => saved?.draft ?? emptyFilters())
   // 마지막으로 검색한 조건. null이면 아직 검색 전이다.
-  const [search, setSearch] = useState(null)
+  const [search, setSearch] = useState(() => saved?.search ?? null)
   const resultsRef = useRef(null)
+  const restoringRef = useRef(Boolean(saved?.search))
+
+  useEffect(() => saveExploreState({ draft }), [draft])
+  useEffect(() => {
+    if (search) saveExploreState({ search })
+  }, [search])
+
+  // 다른 화면으로 나갈 때 스크롤 위치를 기억한다.
+  useEffect(() => () => saveExploreState({ scrollY: window.scrollY }), [])
 
   const draftCount = useMemo(
     () => (me ? others.filter((player) => matchFilters(player, draft)).length : 0),
@@ -111,10 +133,15 @@ function ExploreBody({ me, others, catalog, mode, onModeChange: setMode }) {
     [me, others, search],
   )
 
-  // 검색하면 결과로 내려 준다.
+  // 검색하면 결과로 내려 준다. 돌아온 경우에는 보던 위치로 바로 옮긴다.
   useEffect(() => {
+    if (restoringRef.current) {
+      restoringRef.current = false
+      window.scrollTo(0, saved.scrollY)
+      return
+    }
     if (search) resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [search])
+  }, [search, saved])
 
   if (!me) {
     return (
@@ -128,25 +155,45 @@ function ExploreBody({ me, others, catalog, mode, onModeChange: setMode }) {
     const filters = filtersFromConditions(conditions, catalog)
     // 필터 창으로 바꾸면 AI가 고른 조건을 이어서 다듬을 수 있다.
     setDraft(filters)
-    setSearch({ filters, summary: conditions.summary || describeFilters(filters), byAi: true })
+    setSearch({
+      filters,
+      summary: conditions.summary || describeFilters(filters),
+      byAi: true,
+      at: Date.now(),
+    })
   }
 
   return (
     <>
-      {mode === 'ai' ? (
-        <AiPanel onResult={handleAiResult} />
-      ) : (
-        <FilterPanel
-          others={others}
-          catalog={catalog}
-          filters={draft}
-          count={draftCount}
-          onChange={setDraft}
-          onSearch={() =>
-            setSearch({ filters: draft, summary: describeFilters(draft), byAi: false })
+      {/* 필터로 갈 때는 오른쪽에서, AI로 돌아갈 때는 왼쪽에서 들어온다. */}
+      <div className={styles.flipStage}>
+        <div
+          key={mode}
+          className={
+            flipped ? (mode === 'filter' ? styles.flipForward : styles.flipBackward) : undefined
           }
-        />
-      )}
+        >
+          {mode === 'ai' ? (
+            <AiPanel onResult={handleAiResult} />
+          ) : (
+            <FilterPanel
+              others={others}
+              catalog={catalog}
+              filters={draft}
+              count={draftCount}
+              onChange={setDraft}
+              onSearch={() =>
+                setSearch({
+                  filters: draft,
+                  summary: describeFilters(draft),
+                  byAi: false,
+                  at: Date.now(),
+                })
+              }
+            />
+          )}
+        </div>
+      </div>
       {search && (
         <Results
           ref={resultsRef}
@@ -488,20 +535,21 @@ function Results({ ref, search, results, onEdit }) {
           </Button>
         </div>
       ) : (
-        <ul className={styles.grid}>
-          {results.map(({ player, match }) => (
-            <li key={player.id}>
-              <MatchCard
-                player={player}
-                match={match}
-                compact
-                onChat={() => handleChat(player.id)}
-                isStartingChat={startingId === player.id}
-                profileTo={`/users/${player.id}`}
-              />
-            </li>
-          ))}
-        </ul>
+        <ResultPages
+          key={search.at}
+          searchAt={search.at}
+          results={results}
+          renderCard={({ player, match }) => (
+            <MatchCard
+              player={player}
+              match={match}
+              compact
+              onChat={() => handleChat(player.id)}
+              isStartingChat={startingId === player.id}
+              profileTo={`/users/${player.id}`}
+            />
+          )}
+        />
       )}
     </section>
   )

@@ -372,3 +372,154 @@
     gap: var(--space-3);
   }
 }
+
+/* 결과 페이지: 한 페이지씩 옆으로 넘긴다. */
+.pager {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pagerBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.pagerCount {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pagerButtons {
+  display: flex;
+  gap: 6px;
+}
+
+.pagerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pagerButton:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary-strong);
+}
+
+.pagerButton:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.pageTrack {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.pageTrack::-webkit-scrollbar {
+  display: none;
+}
+
+/* 모바일: 2×2 한 페이지 높이의 상자 안에서 아래로 한 페이지씩 넘긴다. */
+.pageTrackVertical {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+}
+
+.pageTrackVertical::-webkit-scrollbar {
+  display: none;
+}
+
+.pageTrackVertical > .resultPage {
+  flex: 0 0 auto;
+}
+
+/* 세로로 넘길 때는 버튼 화살표도 위·아래를 가리킨다. */
+.pagerButtonVertical {
+  transform: rotate(90deg);
+}
+
+.pagerHint {
+  font-weight: 500;
+}
+
+/* 카드 그림자가 잘리지 않도록 페이지 안쪽에 여백을 둔다. */
+.resultPage {
+  flex: 0 0 100%;
+  align-content: start;
+  padding: 4px 2px 8px;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* AI로 찾기 ↔ 필터로 찾기 전환: 옆으로 밀려 들어온다.
+   필터(오른쪽 버튼)로 갈 때는 오른쪽에서, AI(왼쪽 버튼)로 돌아갈 때는 왼쪽에서 들어온다. */
+.flipStage {
+  overflow-x: clip;
+}
+
+.flipForward,
+.flipBackward {
+  animation-duration: 0.35s;
+  animation-timing-function: cubic-bezier(0.22, 0.8, 0.3, 1);
+  animation-fill-mode: both;
+}
+
+.flipForward {
+  animation-name: slideFromRight;
+}
+
+.flipBackward {
+  animation-name: slideFromLeft;
+}
+
+@keyframes slideFromRight {
+  from {
+    transform: translateX(40%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideFromLeft {
+  from {
+    transform: translateX(-40%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flipForward,
+  .flipBackward {
+    animation: none;
+  }
+}

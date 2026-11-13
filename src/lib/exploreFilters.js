@@ -82,3 +82,63 @@ export function filtersFromConditions(conditions, catalog) {
     hours: new Set(conditions.hours),
   }
 }
+
+// ---------------------------------------------------------------------------
+// 프로필을 보고 돌아와도 조건이 남도록 sessionStorage(이 탭에서만 유지)에 저장한다.
+// ---------------------------------------------------------------------------
+
+const STORAGE_KEY = 'gemjjak:explore'
+
+function filtersToJson(filters) {
+  return {
+    games: [...filters.games],
+    genres: [...filters.genres],
+    tags: [...filters.tags],
+    days: [...filters.days],
+    hours: [...filters.hours],
+  }
+}
+
+function filtersFromJson(json) {
+  return {
+    games: new Map(json.games),
+    genres: new Map(json.genres),
+    tags: new Map(json.tags),
+    days: new Set(json.days),
+    hours: new Set(json.hours),
+  }
+}
+
+/** { mode, draft, search, scrollY, page, pageOf } 또는 저장된 게 없으면 null */
+export function loadExploreState() {
+  try {
+    const json = JSON.parse(sessionStorage.getItem(STORAGE_KEY))
+    if (!json) return null
+    return {
+      mode: json.mode === 'filter' ? 'filter' : 'ai',
+      draft: filtersFromJson(json.draft),
+      search: json.search
+        ? { ...json.search, filters: filtersFromJson(json.search.filters) }
+        : null,
+      scrollY: Number(json.scrollY) || 0,
+      page: Number(json.page) || 0,
+      pageOf: json.pageOf ?? null,
+    }
+  } catch {
+    return null
+  }
+}
+
+/** 바뀐 부분만 넘겨도 된다. */
+export function saveExploreState(patch) {
+  try {
+    const prev = JSON.parse(sessionStorage.getItem(STORAGE_KEY)) ?? {}
+    const next = { ...prev, ...patch }
+    if (patch.draft) next.draft = filtersToJson(patch.draft)
+    if (patch.search)
+      next.search = { ...patch.search, filters: filtersToJson(patch.search.filters) }
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+  } catch {
+    // 저장소를 쓸 수 없으면(사생활 보호 모드 등) 저장하지 않고 넘어간다.
+  }
+}
