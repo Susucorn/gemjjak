@@ -11,9 +11,9 @@
   background: var(--color-bg);
 }
 
-/* 고정 헤더 높이만큼 목차 이동 위치를 내린다. */
+/* 목차로 이동할 때 고정 헤더(56px)와 목차 바(52px)에 제목이 가려지지 않게 한다. */
 .page section {
-  scroll-margin-top: 64px;
+  scroll-margin-top: 116px;
 }
 
 /* 상단 고정 헤더 */
@@ -168,13 +168,20 @@
 }
 
 /* 목차 */
+/* 스크롤하면 상단 헤더 바로 아래에 붙는다. */
 .index {
+  position: sticky;
+  top: 56px;
+  z-index: 9;
   border-top: 1px solid var(--color-text-primary);
   border-bottom: 1px solid var(--color-border);
+  background: rgb(255 255 255 / 95%);
+  backdrop-filter: blur(8px);
 }
 
 .index ol {
   display: flex;
+  scroll-padding: 0 var(--space-3);
   gap: var(--space-1);
   max-width: 1080px;
   margin: 0 auto;
@@ -202,6 +209,16 @@
 }
 
 .index a:hover {
+  color: var(--color-primary-strong);
+}
+
+/* 지금 보고 있는 섹션 */
+.index a.indexActive {
+  box-shadow: inset 0 -3px 0 var(--color-primary);
+  color: var(--color-primary-strong);
+}
+
+.indexActive .indexNumber {
   color: var(--color-primary-strong);
 }
 

@@ -80,6 +80,80 @@ const INDEX = [
   { id: 'start', short: '시작하기' },
 ]
 
+/** 고정 헤더(56px) + 목차 바(52px) 아래쪽 기준선. 섹션 위쪽이 이 선을 지나면 그 섹션을 보고 있는 것으로 본다. */
+const ACTIVE_LINE = 140
+
+/** 지금 보고 있는 섹션 id. 아직 히어로를 보고 있으면 null이다. */
+function useActiveSection(ids) {
+  const [activeId, setActiveId] = useState(null)
+
+  useEffect(() => {
+    let frame = 0
+    const update = () => {
+      frame = 0
+      let current = null
+      for (const id of ids) {
+        const section = document.getElementById(id)
+        if (section && section.getBoundingClientRect().top <= ACTIVE_LINE) current = id
+      }
+      // 맨 아래까지 내리면 마지막 섹션(시작하기)이 기준선에 닿지 않아도 그 섹션으로 본다.
+      const atBottom =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
+      setActiveId(atBottom ? ids.at(-1) : current)
+    }
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (frame) cancelAnimationFrame(frame)
+    }
+  }, [ids])
+
+  return activeId
+}
+
+const INDEX_IDS = INDEX.map((item) => item.id)
+
+/** 화면 위쪽에 고정되는 목차. 모바일에서 현재 항목이 가려져 있으면 옆으로 밀어서 보여 준다. */
+function IndexNav() {
+  const activeId = useActiveSection(INDEX_IDS)
+  const listRef = useRef(null)
+
+  useEffect(() => {
+    const list = listRef.current
+    const active = list?.querySelector('[aria-current="location"]')
+    if (!list || !active) return
+    // scrollIntoView는 페이지 세로 스크롤까지 움직일 수 있어 목차 가로 스크롤만 직접 옮긴다.
+    const left = active.offsetLeft - (list.clientWidth - active.offsetWidth) / 2
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    list.scrollTo({ left, behavior: reduceMotion ? 'auto' : 'smooth' })
+  }, [activeId])
+
+  return (
+    <nav className={styles.index} aria-label="소개 목차">
+      <ol ref={listRef}>
+        {INDEX.map((item, number) => (
+          <li key={item.id}>
+            <a
+              href={`#${item.id}`}
+              className={activeId === item.id ? styles.indexActive : undefined}
+              aria-current={activeId === item.id ? 'location' : undefined}
+            >
+              <span className={styles.indexNumber}>{String(number + 1).padStart(2, '0')}</span>
+              {item.short}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+
 /** 화면에 들어오면 한 번 살짝 떠오르며 나타난다. 움직임 줄이기 설정에서는 CSS가 효과를 끈다. */
 function Reveal({ children, className = '' }) {
   const ref = useRef(null)
@@ -233,18 +307,7 @@ export function Login() {
           </div>
         </section>
 
-        <nav className={styles.index} aria-label="소개 목차">
-          <ol>
-            {INDEX.map((item, number) => (
-              <li key={item.id}>
-                <a href={`#${item.id}`}>
-                  <span className={styles.indexNumber}>{String(number + 1).padStart(2, '0')}</span>
-                  {item.short}
-                </a>
-              </li>
-            ))}
-          </ol>
-        </nav>
+        <IndexNav />
 
         {FEATURES.map((feature, number) => (
           <section
