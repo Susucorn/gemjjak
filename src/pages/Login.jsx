@@ -229,8 +229,11 @@ export function Login() {
   const [redirectingTo, setRedirectingTo] = useState(null)
 
   // 오류 파라미터가 주소창에 남아 있으면 새로고침할 때마다 같은 오류가 다시 뜬다.
+  // 로그인에 성공하면 주소 뒤에 토큰(#access_token=...)이 붙어 오고 Supabase가 읽은 뒤 직접 지운다.
+  // 그래서 오류가 있을 때만 지운다. 무조건 지우면 배포 환경처럼 화면이 빨리 뜰 때
+  // Supabase가 토큰을 읽기 전에 사라져 로그인이 풀린다.
   useEffect(() => {
-    if (window.location.search || window.location.hash) {
+    if (readOAuthError()) {
       window.history.replaceState(window.history.state, '', window.location.pathname)
     }
   }, [])
