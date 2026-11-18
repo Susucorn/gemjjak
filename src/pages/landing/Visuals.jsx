@@ -122,7 +122,7 @@ export function RecommendVisual() {
   )
 }
 
-/** 04 1:1 채팅: 매칭 근거 + 말풍선 + 빠른 답장 칩 */
+/** 05 1:1 채팅: 매칭 근거 + 말풍선 + 빠른 답장 칩 */
 export function ChatVisual() {
   return (
     <div className={styles.visualCard} aria-hidden="true">
@@ -141,19 +141,46 @@ export function ChatVisual() {
   )
 }
 
-/** 05 디스코드 커뮤니티: 서버 카드와 참여 버튼 */
+/** 04 AI 탐색: 문장 → AI가 정리한 조건 → 궁합순 결과 */
+export function ExploreVisual() {
+  return (
+    <div className={styles.visualCard} aria-hidden="true">
+      <div className={styles.modeSwitch}>
+        <span className={styles.modeActive}>✨ AI로 찾기</span>
+        <span>필터로 찾기</span>
+      </div>
+      <p className={`${styles.bubble} ${styles.bubbleMe}`}>주말 저녁에 롤 즐겜할 사람</p>
+      <div className={styles.aiAnswer}>
+        <p className={styles.aiLabel}>✨ AI가 조건으로 바꿨어요</p>
+        <div className={styles.conditionChips}>
+          <span>리그 오브 레전드</span>
+          <span>즐겜</span>
+          <span>토·일</span>
+          <span>18시~22시</span>
+        </div>
+        <ul className={styles.aiList}>
+          <li>
+            칼바람장인 <strong>88%</strong>
+          </li>
+          <li>
+            별빛여행자 <strong>81%</strong>
+          </li>
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+/** 06 디스코드 커뮤니티: 별명 검색과 서버 카드 */
 export function CommunityVisual() {
   return (
     <div className={styles.visualCard} aria-hidden="true">
+      <p className={styles.searchField}>
+        <span className={styles.searchIcon}>⌕</span> 롤
+      </p>
       {[
-        {
-          name: '별빛 롤 내전방',
-          game: '리그 오브 레전드',
-          members: 1240,
-          online: 312,
-          joined: false,
-        },
-        { name: '원신 협동 길드', game: '원신', members: 860, online: 145, joined: true },
+        { name: '별빛 롤 내전방', game: '리그 오브 레전드', members: 1240, online: 312 },
+        { name: '칼바람 나라', game: '리그 오브 레전드', members: 860, online: 145 },
       ].map((server) => (
         <div key={server.name} className={styles.server}>
           <span className={styles.serverIcon}>
@@ -163,37 +190,12 @@ export function CommunityVisual() {
             <strong>{server.name}</strong>
             <span>
               {server.game} · 멤버 {server.members.toLocaleString()} ·{' '}
-              <span className={styles.online}>● {server.online} 온라인</span>
+              <span className={styles.online}>● 접속 {server.online}</span>
             </span>
           </span>
-          <span className={server.joined ? styles.joined : styles.join}>
-            {server.joined ? '참여 중' : '참여'}
-          </span>
+          <span className={styles.join}>참여하기</span>
         </div>
       ))}
-    </div>
-  )
-}
-
-/** 06 AI 도우미: 질문하면 조건을 해석해 사용자 목록을 보여 준다. */
-export function AiVisual() {
-  return (
-    <div className={styles.visualCard} aria-hidden="true">
-      <p className={`${styles.bubble} ${styles.bubbleMe}`}>
-        주말 오후에 원신 같이 할 뉴비환영 유저 있어?
-      </p>
-      <div className={styles.aiAnswer}>
-        <p className={styles.aiLabel}>✦ AI 도우미</p>
-        <p className={styles.aiText}>토·일 오후에 원신을 하는 뉴비환영 게이머 2명을 찾았어요.</p>
-        <ul className={styles.aiList}>
-          <li>
-            파도타기 <strong>82%</strong>
-          </li>
-          <li>
-            새내기게이머 <strong>76%</strong>
-          </li>
-        </ul>
-      </div>
     </div>
   )
 }

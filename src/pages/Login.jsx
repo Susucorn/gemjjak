@@ -6,9 +6,9 @@ import { isSupabaseConfigured } from '../lib/supabaseClient'
 import { saveReturnTo } from '../lib/returnTo'
 import { signInWithProvider } from '../services/authService'
 import {
-  AiVisual,
   ChatVisual,
   CommunityVisual,
+  ExploreVisual,
   MatchVisual,
   ProfileVisual,
   RecommendVisual,
@@ -33,8 +33,8 @@ const FEATURES = [
     short: '취향 프로필',
     eyebrow: 'PROFILE · 취향 프로필',
     title: ['목록에 없는 게임도,', '요일마다 다른 시간도'],
-    body: '인기 게임을 고르고, 없는 게임·장르·스타일은 직접 입력하면 바로 반영돼요. 접속 시간은 월요일부터 일요일까지 요일마다 따로 정할 수 있어요.',
-    points: ['게임·장르·스타일 직접 추가', '요일별 24칸 접속 시간', '언제든 프로필에서 수정'],
+    body: '인기 게임을 고르고, 없는 게임·장르·스타일은 직접 입력하면 바로 반영돼요. 접속 시간은 요일마다 따로 정하고, 여러 요일을 골라 한 번에 넣을 수도 있어요.',
+    points: ['게임·장르·스타일 직접 추가', '여러 요일 시간 한 번에 설정', '언제든 프로필에서 수정'],
     Visual: ProfileVisual,
   },
   {
@@ -42,9 +42,18 @@ const FEATURES = [
     short: '오늘의 추천',
     eyebrow: 'RECOMMEND · 오늘의 추천',
     title: ['왜 잘 맞는지', '이유까지 알려 줘요'],
-    body: '홈에서 궁합 높은 게이머를 카드로 보여 줘요. "공통 게임 원신 · 밤 9시 이후 시간이 겹쳐요"처럼 추천한 이유를 함께 보여 줘서 믿고 먼저 말을 걸 수 있어요.',
-    points: ['궁합 % 게이지', '공통 태그 강조', '나와 유사한 플레이어'],
+    body: '홈에서 궁합 높은 게이머를 카드로 보여 주고 "공통 게임 원신 · 밤 9시 이후 시간이 겹쳐요"처럼 추천한 이유를 함께 알려 줘요. 카드를 누르면 같이 하는 게임과 요일별로 겹치는 시간을 자세히 볼 수 있어요.',
+    points: ['궁합 %와 추천 이유', '카드를 누르면 상세 프로필', '요일별 접속 시간 비교'],
     Visual: RecommendVisual,
+  },
+  {
+    id: 'explore',
+    short: 'AI 탐색',
+    eyebrow: 'EXPLORE · AI 탐색',
+    title: ['원하는 사람을 말하면', 'AI가 조건으로 바꿔 찾아요'],
+    body: '"주말 저녁에 롤 즐겜할 사람"처럼 적으면 AI가 게임·요일·시간·스타일 조건으로 바꿔 실제 게이머를 궁합 높은 순으로 찾아 줘요. 필터로 직접 고르거나, AI가 고른 조건을 필터에서 다듬을 수도 있어요.',
+    points: ['"오늘 밤", "주말"도 이해', 'AI ↔ 필터 바로 전환', '궁합 높은 순 결과'],
+    Visual: ExploreVisual,
   },
   {
     id: 'chat',
@@ -60,18 +69,9 @@ const FEATURES = [
     short: '디스코드 커뮤니티',
     eyebrow: 'COMMUNITY · 디스코드 커뮤니티',
     title: ['흩어진 디스코드 서버를', '한곳에서 찾고 참여해요'],
-    body: '게임별 디스코드 서버를 멤버 수·온라인 수와 함께 보여 주고, [참여]를 누르면 디스코드로 바로 이동해요. 운영하는 서버가 있다면 프로필에서 등록할 수 있어요.',
-    points: ['게임별 서버 필터', '멤버·온라인 수', '내 서버 등록'],
+    body: '게임별 디스코드 서버를 실시간 멤버·접속 수와 함께 보여 주고, [참여하기]를 누르면 디스코드로 바로 이동해요. "배그", "로아"처럼 별명으로 검색해도 찾고, 운영하는 서버는 등록하면 바로 공개돼요.',
+    points: ['게임 이름·별명 검색', '실시간 멤버·접속 수', '등록하면 바로 공개'],
     Visual: CommunityVisual,
-  },
-  {
-    id: 'ai',
-    short: 'AI 도우미',
-    eyebrow: 'AI HELPER · AI 도우미',
-    title: ['필터 대신', '말로 물어보세요'],
-    body: '"주말 오후에 원신 같이 할 뉴비환영 유저 있어?"처럼 물으면 AI가 내 프로필과 지금 시각을 반영해 조건을 만들고, 실제 사용자 중에서 궁합순으로 찾아 줘요.',
-    points: ['"지금", "주말 저녁"도 이해', '내 프로필 반영', '실제 사용자만 추천'],
-    Visual: AiVisual,
   },
 ]
 
@@ -293,7 +293,7 @@ export function Login() {
             </h1>
             <p className={styles.heroLead}>
               하는 게임, 접속 시간, 플레이 스타일로 궁합을 계산해 나와 맞는 게이머와 디스코드
-              커뮤니티를 찾아 드려요.
+              커뮤니티를 찾아 드려요. 원하는 사람을 말로 설명하면 AI가 찾아 주기도 해요.
             </p>
             {/* 로그인에 실패하면 이 화면 맨 위로 돌아오므로 오류 안내는 여기에도 보여 준다. */}
             {alerts}

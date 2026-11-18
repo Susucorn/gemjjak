@@ -676,8 +676,7 @@
   color: #1e6b3a;
 }
 
-.join,
-.joined {
+.join {
   flex: none;
   padding: 6px var(--space-3);
   border-radius: var(--radius-chip);
@@ -688,11 +687,7 @@
 .join {
   background: var(--color-primary);
   color: var(--color-on-primary);
-}
-
-.joined {
-  background: var(--color-bg-muted);
-  color: var(--color-text-tertiary-on-gray);
+  white-space: nowrap;
 }
 
 /* ---------------------------------------------------------------------------
@@ -747,4 +742,61 @@
   .start {
     padding: 96px var(--space-8);
   }
+}
+
+/* 04 AI 탐색 */
+.modeSwitch {
+  display: flex;
+  gap: 4px;
+  align-self: flex-start;
+  padding: 4px;
+  border-radius: var(--radius-chip);
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.modeSwitch span {
+  padding: 6px var(--space-3);
+  border-radius: var(--radius-chip);
+}
+
+.modeSwitch .modeActive {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.conditionChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.conditionChips span {
+  padding: 4px var(--space-3);
+  border-radius: var(--radius-chip);
+  background: var(--color-bg);
+  color: var(--color-primary-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* 06 커뮤니티 검색창 */
+.searchField {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-button);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.searchIcon {
+  color: var(--color-text-tertiary);
+  font-size: 18px;
 }

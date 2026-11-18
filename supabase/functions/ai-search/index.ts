@@ -6,7 +6,8 @@
 // 2. 현재 한국 시간의 요일·시각을 계산한다("오늘 밤", "지금" 해석용).
 // 3. 게임·장르·태그 이름 목록을 읽어 Claude에게 넘길 문맥을 만든다.
 // 4. Claude가 JSON 스키마(structured outputs)에 맞춰 조건을 만든다.
-// 5. 값 범위를 서버에서 다시 검사하고 { conditions }를 반환한다.
+// 5. 값 범위를 서버에서 다시 검사하고 { conditions, remaining }을 반환한다.
+// 한 사람이 하루(한국 시간)에 2번까지 쓴다. 횟수는 DB 함수 consume_ai_search가 센다.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import Anthropic from '@anthropic-ai/sdk'
@@ -123,6 +124,11 @@ export default {
     const apiKey = getAnthropicApiKey()
     if (!apiKey) return errorResponse(500, 'server_misconfigured')
 
+    // 하루 2번 제한. Claude를 부르기 전에 남은 횟수를 확인한다.
+    const remaining = await ctx.supabase.rpc('ai_search_remaining')
+    if (remaining.error) return errorResponse(500, 'usage_unavailable')
+    if (remaining.data <= 0) return errorResponse(429, 'daily_limit')
+
     // 사용자 권한(RLS)으로 이름 목록만 읽는다.
     const [games, genres, vocabulary, customGames, customTags] = await Promise.all([
       ctx.supabase.from('games').select('name, aliases').order('sort_order'),
@@ -171,25 +177,39 @@ export default {
       } as Anthropic.Beta.MessageCreateParamsNonStreaming)
     } catch (error) {
       console.error('claude request failed', error)
-      return errorResponse(502, 'ai_unavailable')
+      // Anthropic API 오류는 상태 코드와 메시지만 돌려준다(키는 들어 있지 않다).
+      const detail =
+        error instanceof Anthropic.APIError
+          ? `claude ${error.status ?? 'network'}: ${error.message}`.slice(0, 300)
+          : `claude: ${String(error)}`.slice(0, 300)
+      return errorResponse(502, 'ai_unavailable', detail)
     }
 
     if (response.stop_reason === 'refusal') return errorResponse(422, 'refused')
-    if (response.stop_reason === 'max_tokens') return errorResponse(502, 'ai_unavailable')
+    if (response.stop_reason === 'max_tokens') {
+      return errorResponse(502, 'ai_unavailable', 'stop_reason: max_tokens')
+    }
 
     const text = response.content.find((block) => block.type === 'text')
-    if (!text || text.type !== 'text') return errorResponse(502, 'ai_unavailable')
+    if (!text || text.type !== 'text') {
+      return errorResponse(502, 'ai_unavailable', `no text block (stop_reason: ${response.stop_reason})`)
+    }
 
     let raw: unknown
     try {
       raw = JSON.parse(text.text)
     } catch {
-      return errorResponse(502, 'ai_unavailable')
+      return errorResponse(502, 'ai_unavailable', 'answer is not JSON')
     }
     if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
-      return errorResponse(502, 'ai_unavailable')
+      return errorResponse(502, 'ai_unavailable', 'answer is not an object')
     }
 
-    return Response.json({ conditions: cleanConditions(raw as Record<string, unknown>) })
+    // 답을 받은 뒤에만 1회를 쓴다. 동시에 두 번 눌러 한도를 넘었더라도 이미 받은 답은 돌려준다.
+    const consumed = await ctx.supabase.rpc('consume_ai_search')
+    return Response.json({
+      conditions: cleanConditions(raw as Record<string, unknown>),
+      remaining: consumed.error ? 0 : consumed.data,
+    })
   }),
 }

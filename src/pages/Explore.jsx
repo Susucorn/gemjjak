@@ -19,8 +19,10 @@ import {
 } from '../lib/exploreFilters'
 import {
   AI_QUESTION_MAX_LENGTH,
+  AI_SEARCH_DAILY_LIMIT,
   aiSearchErrorMessage,
   askAiSearch,
+  fetchAiSearchRemaining,
 } from '../services/aiSearchService'
 import { startDirectChat } from '../services/chatService'
 import { fetchPlayers } from '../services/matchService'
@@ -213,15 +215,33 @@ function AiPanel({ onResult }) {
   const [question, setQuestion] = useState('')
   const [isAsking, setIsAsking] = useState(false)
   const [error, setError] = useState(null)
+  // 오늘 남은 AI 검색 횟수. 불러오기 전에는 null이다.
+  const [remaining, setRemaining] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAiSearchRemaining()
+      .then((count) => !cancelled && setRemaining(count))
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const usedUp = remaining === 0
+  const disabled = isAsking || usedUp
 
   async function ask(text) {
     const trimmed = text.trim()
-    if (!trimmed || isAsking) return
+    if (!trimmed || disabled) return
     setIsAsking(true)
     setError(null)
     try {
-      onResult(await askAiSearch(trimmed))
+      const result = await askAiSearch(trimmed)
+      setRemaining(result.remaining)
+      onResult(result.conditions)
     } catch (caught) {
+      if (caught.code === 'daily_limit') setRemaining(0)
       setError(aiSearchErrorMessage(caught))
     } finally {
       setIsAsking(false)
@@ -233,6 +253,13 @@ function AiPanel({ onResult }) {
       <h2 id="ai-title" className={styles.panelTitle}>
         <span className={styles.aiBadge}>AI</span> 어떤 게이머를 찾으세요?
       </h2>
+      {remaining != null && (
+        <p className={usedUp ? styles.aiQuotaEmpty : styles.aiQuota}>
+          {usedUp
+            ? '오늘 AI 검색을 모두 썼어요. 내일 다시 쓸 수 있어요. 필터로 찾아보세요.'
+            : `AI 검색은 하루 ${AI_SEARCH_DAILY_LIMIT}번까지 쓸 수 있어요 · 오늘 ${remaining}번 남음`}
+        </p>
+      )}
       <form
         className={styles.aiForm}
         onSubmit={(event) => {
@@ -247,9 +274,9 @@ function AiPanel({ onResult }) {
           maxLength={AI_QUESTION_MAX_LENGTH}
           placeholder="예: 평일 밤에 롤 즐겜할 사람"
           aria-label="찾는 게이머 설명"
-          disabled={isAsking}
+          disabled={disabled}
         />
-        <button type="submit" className={styles.aiButton} disabled={isAsking || !question.trim()}>
+        <button type="submit" className={styles.aiButton} disabled={disabled || !question.trim()}>
           {isAsking ? '찾는 중…' : '찾기'}
         </button>
       </form>
@@ -259,7 +286,7 @@ function AiPanel({ onResult }) {
             key={example}
             type="button"
             className={styles.example}
-            disabled={isAsking}
+            disabled={disabled}
             onClick={() => {
               setQuestion(example)
               ask(example)

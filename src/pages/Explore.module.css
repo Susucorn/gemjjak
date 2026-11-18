@@ -121,6 +121,21 @@
   letter-spacing: 0.04em;
 }
 
+.aiQuota,
+.aiQuotaEmpty {
+  margin-top: calc(var(--space-2) * -1);
+  font-size: 12px;
+}
+
+.aiQuota {
+  color: var(--color-text-secondary);
+}
+
+.aiQuotaEmpty {
+  color: #b42318;
+  font-weight: 700;
+}
+
 .aiForm {
   display: flex;
   gap: var(--space-2);
