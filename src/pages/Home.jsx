@@ -1,11 +1,11 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { MatchCard } from '../components/match/MatchCard'
 import { Button } from '../components/ui/Button'
 import { useAuth } from '../hooks/useAuth'
 import { useLoader } from '../hooks/useLoader'
 import { rankPlayers } from '../lib/compatibility'
-import { startDirectChat } from '../services/chatService'
+import { newChatPath } from '../services/chatService'
 import { fetchPlayers } from '../services/matchService'
 import styles from './Home.module.css'
 
@@ -41,25 +41,8 @@ export function Home() {
 
 function Recommendations({ me, others }) {
   const navigate = useNavigate()
-  // 대화방을 여는 중인 상대 id. 한 번에 하나만 연다.
-  const [startingId, setStartingId] = useState(null)
-  const [chatError, setChatError] = useState(null)
-
-  async function handleChat(otherId) {
-    setStartingId(otherId)
-    setChatError(null)
-    try {
-      const roomId = await startDirectChat(otherId)
-      navigate(`/chat/${roomId}`)
-    } catch {
-      setChatError('대화방을 열지 못했어요. 잠시 후 다시 시도해 주세요.')
-      setStartingId(null)
-    }
-  }
-
   const chatProps = (player) => ({
-    onChat: () => handleChat(player.id),
-    isStartingChat: startingId === player.id,
+    onChat: () => navigate(newChatPath(player.id)),
     profileTo: `/users/${player.id}`,
   })
 
@@ -91,12 +74,6 @@ function Recommendations({ me, others }) {
           수정
         </Link>
       </section>
-
-      {chatError && (
-        <p className={styles.alert} role="alert">
-          {chatError}
-        </p>
-      )}
 
       <section className={styles.section} aria-labelledby="today-title">
         <div className={styles.sectionHeader}>

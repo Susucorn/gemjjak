@@ -24,7 +24,7 @@ import {
   askAiSearch,
   fetchAiSearchRemaining,
 } from '../services/aiSearchService'
-import { startDirectChat } from '../services/chatService'
+import { newChatPath } from '../services/chatService'
 import { fetchPlayers } from '../services/matchService'
 import { DAYS, TIME_PRESETS, dayLabel, presetHours } from './onboarding/hours'
 import { ResultPages } from './explore/ResultPages'
@@ -518,20 +518,6 @@ function OptionGroup({ label, options, selected, onToggle, onAdd, placeholder })
 
 function Results({ ref, search, results, onEdit }) {
   const navigate = useNavigate()
-  const [startingId, setStartingId] = useState(null)
-  const [chatError, setChatError] = useState(null)
-
-  async function handleChat(otherId) {
-    setStartingId(otherId)
-    setChatError(null)
-    try {
-      navigate(`/chat/${await startDirectChat(otherId)}`)
-    } catch {
-      setChatError('대화방을 열지 못했어요. 잠시 후 다시 시도해 주세요.')
-      setStartingId(null)
-    }
-  }
-
   return (
     <section ref={ref} className={styles.results} aria-labelledby="results-title">
       <div className={styles.resultsHeader}>
@@ -549,11 +535,6 @@ function Results({ ref, search, results, onEdit }) {
           조건 바꾸기
         </button>
       </div>
-      {chatError && (
-        <p className={styles.alert} role="alert">
-          {chatError}
-        </p>
-      )}
       {results.length === 0 ? (
         <div className={styles.empty}>
           <p>조건에 맞는 게이머가 없어요. 조건을 몇 개 빼 보세요.</p>
@@ -571,8 +552,7 @@ function Results({ ref, search, results, onEdit }) {
               player={player}
               match={match}
               compact
-              onChat={() => handleChat(player.id)}
-              isStartingChat={startingId === player.id}
+              onChat={() => navigate(newChatPath(player.id))}
               profileTo={`/users/${player.id}`}
             />
           )}

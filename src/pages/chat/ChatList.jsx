@@ -62,9 +62,10 @@ export function ChatList({ activeRoomId, refreshKey }) {
       {state.status === 'ready' && state.chats.length > 0 && (
         <ul className={styles.rooms}>
           {state.chats.map((chat) => {
-            const preview = chat.last_message
-              ? `${chat.last_sender_id === user.id ? '나: ' : ''}${chat.last_message}`
-              : '대화를 시작해 보세요'
+            const preview =
+              chat.last_kind === 'leave'
+                ? `${chat.nickname}님이 채팅방을 나갔어요`
+                : `${chat.last_sender_id === user.id ? '나: ' : ''}${chat.last_message}`
             return (
               <li key={chat.room_id}>
                 <Link

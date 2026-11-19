@@ -1,0 +1,35 @@
+/* 알림 배지는 브랜드색과 구분되도록 빨간색을 쓴다. #d92d20 위 흰 글자는 대비 4.8:1이다. */
+.badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #d92d20;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* 하단 탭바: 아이콘 오른쪽 위에 겹친다. 부모(.iconWrap)가 position: relative다. */
+.corner {
+  position: absolute;
+  top: -5px;
+  left: 14px;
+  box-shadow: 0 0 0 2px var(--color-bg);
+}
+
+/* 사이드바: 메뉴 이름 오른쪽 끝에 둔다. */
+.end {
+  margin-left: auto;
+}
+
+.srOnly {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

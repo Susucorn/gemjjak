@@ -24,6 +24,11 @@
   font-weight: 500;
 }
 
+.iconWrap {
+  position: relative;
+  display: flex;
+}
+
 .active {
   color: var(--color-primary);
   font-weight: 700;

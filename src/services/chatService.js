@@ -2,11 +2,48 @@ import { supabase } from '../lib/supabaseClient'
 
 export const MESSAGE_MAX_LENGTH = 2000
 
-/** 상대와의 1:1 방을 찾거나 만들어 방 id를 돌려준다. */
-export async function startDirectChat(otherId) {
-  const { data, error } = await supabase.rpc('start_direct_chat', { p_other_id: otherId })
+/**
+ * [채팅하기]가 여는 주소. 방은 아직 만들지 않는다.
+ * 이미 대화한 상대면 그 방으로, 아니면 첫 메시지를 쓰는 화면으로 간다.
+ */
+export function newChatPath(otherId) {
+  return `/chat/new/${otherId}`
+}
+
+/** 나와 상대가 함께 있는 1:1 방 id. 없으면 null이다. */
+export async function findDirectChat(otherId) {
+  const { data, error } = await supabase.rpc('find_direct_chat', { p_other_id: otherId })
   if (error) throw error
   return data
+}
+
+/** 첫 메시지를 보내면서 방을 만든다(이미 있으면 그 방에 보낸다). 방 id를 돌려준다. */
+export async function sendDirectMessage(otherId, content) {
+  const { data, error } = await supabase.rpc('send_direct_message', {
+    p_other_id: otherId,
+    p_content: content.trim(),
+  })
+  if (error) throw error
+  return data
+}
+
+/** 메시지 대화 상대 프로필. 온보딩을 마친 사용자만 돌려준다. */
+export async function fetchChatPartner(otherId) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, nickname, avatar_url, bio')
+    .eq('id', otherId)
+    .eq('onboarded', true)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/** 모든 방의 안 읽은 메시지 수. */
+export async function fetchUnreadCount() {
+  const { data, error } = await supabase.rpc('unread_chat_count')
+  if (error) throw error
+  return data ?? 0
 }
 
 /** 내 1:1 대화 목록. 최근 메시지 순이다. */
@@ -16,19 +53,35 @@ export async function listMyChats() {
   return data
 }
 
-/** 방 정보와 상대 프로필. 내가 속하지 않은 방이면 null이다(RLS). */
+/**
+ * 방 정보와 상대 프로필. 내가 속하지 않았거나 나간 방이면 null이다(RLS).
+ * otherLeft: 상대가 방을 나가서 더 보낼 수 없는 방인지.
+ */
 export async function fetchDirectRoom(roomId, myId) {
   const { data, error } = await supabase
     .from('chat_members')
-    .select('user_id, profiles(id, nickname, avatar_url, bio)')
+    .select('user_id, left_at, profiles(id, nickname, avatar_url, bio)')
     .eq('room_id', roomId)
   if (error) throw error
   if (!data.some((member) => member.user_id === myId)) return null
   const other = data.find((member) => member.user_id !== myId)
-  return { roomId, other: other?.profiles ?? null }
+  return { roomId, other: other?.profiles ?? null, otherLeft: Boolean(other?.left_at) }
 }
 
-const MESSAGE_COLUMNS = 'id, room_id, sender_id, content, created_at'
+/** 방을 나간다. 상대에게 나갔다는 안내가 가고, 나는 이 방을 다시 볼 수 없다. */
+export async function leaveChat(roomId) {
+  const { error } = await supabase.rpc('leave_direct_chat', { p_room_id: roomId })
+  if (error) throw error
+}
+
+/** 지금까지의 대화를 내 화면에서만 지운다. 상대가 새로 보내면 그 메시지부터 다시 보인다. */
+export async function clearChat(roomId) {
+  const { error } = await supabase.rpc('clear_direct_chat', { p_room_id: roomId })
+  if (error) throw error
+}
+
+// kind: 'text'는 일반 메시지, 'leave'는 나가기 안내(content는 쓰지 않는다).
+const MESSAGE_COLUMNS = 'id, room_id, sender_id, content, kind, created_at'
 
 /** 최근 메시지부터 limit개를 읽어 오래된 순으로 돌려준다. */
 export async function fetchMessages(roomId, limit = 200) {

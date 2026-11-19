@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Avatar } from '../components/ui/Avatar'
 import { BackIcon } from '../components/ui/BackIcon'
@@ -8,7 +8,7 @@ import { GameTile } from '../components/ui/GameTile'
 import { useAuth } from '../hooks/useAuth'
 import { useLoader } from '../hooks/useLoader'
 import { WEIGHTS, compatibility } from '../lib/compatibility'
-import { startDirectChat } from '../services/chatService'
+import { newChatPath } from '../services/chatService'
 import { fetchPlayers } from '../services/matchService'
 import { fetchApprovedServersOf } from '../services/serverService'
 import { DAYS, HOURS } from './onboarding/hours'
@@ -91,19 +91,6 @@ const PART_LABELS = [
 
 function PlayerDetails({ me, player, catalog, servers, match }) {
   const navigate = useNavigate()
-  const [isStartingChat, setIsStartingChat] = useState(false)
-  const [chatError, setChatError] = useState(null)
-
-  async function handleChat() {
-    setIsStartingChat(true)
-    setChatError(null)
-    try {
-      navigate(`/chat/${await startDirectChat(player.id)}`)
-    } catch {
-      setChatError('대화방을 열지 못했어요. 잠시 후 다시 시도해 주세요.')
-      setIsStartingChat(false)
-    }
-  }
 
   const commonGames = new Set(match?.commonGames ?? [])
   const commonGenres = new Set(match?.commonGenres ?? [])
@@ -119,18 +106,8 @@ function PlayerDetails({ me, player, catalog, servers, match }) {
         <Avatar src={player.avatarUrl} name={player.nickname} size={80} />
         <h1 className={styles.nickname}>{player.nickname}</h1>
         {player.bio && <p className={styles.bio}>{player.bio}</p>}
-        {chatError && (
-          <p className={styles.alert} role="alert">
-            {chatError}
-          </p>
-        )}
-        <Button
-          className={styles.chatButton}
-          onClick={handleChat}
-          disabled={isStartingChat}
-          aria-busy={isStartingChat}
-        >
-          {isStartingChat ? '대화방 여는 중…' : '채팅하기'}
+        <Button className={styles.chatButton} onClick={() => navigate(newChatPath(player.id))}>
+          채팅하기
         </Button>
       </section>
 

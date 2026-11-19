@@ -209,6 +209,74 @@
   white-space: nowrap;
 }
 
+/* 오른쪽 위 [⋯] 메뉴 */
+.menuWrap {
+  position: relative;
+  margin-right: calc(var(--space-2) * -1);
+}
+
+.menuButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.menuButton:hover {
+  background: var(--color-bg-muted);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  min-width: 168px;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--space-3);
+  background: var(--color-bg);
+  box-shadow: 0 8px 24px rgba(25, 31, 40, 0.12);
+}
+
+.menuItem {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--space-2);
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuItem:hover,
+.menuItem:focus-visible {
+  background: var(--color-bg-muted);
+}
+
+.menuItemDanger {
+  color: #b42318;
+}
+
+.actionError {
+  margin: var(--space-3) var(--space-4) 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--space-3);
+  background: #fff1f0;
+  color: #b42318;
+  font-size: var(--font-size-sm);
+}
+
 /* 상단 매칭 근거 */
 .matchBanner {
   margin: var(--space-3) var(--space-4) 0;
@@ -254,6 +322,22 @@
   background: var(--color-bg-muted);
   color: var(--color-text-tertiary-on-gray);
   font-size: 12px;
+}
+
+/* "OO님이 채팅방을 나갔어요" 안내 */
+.notice {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-2) 0;
+  text-align: center;
+}
+
+.notice span {
+  padding: 6px var(--space-3);
+  border-radius: var(--radius-chip);
+  background: var(--color-bg-muted);
+  color: var(--color-text-tertiary-on-gray);
+  font-size: var(--font-size-sm);
 }
 
 .message {
@@ -308,35 +392,46 @@
   border-top: 1px solid var(--color-border);
 }
 
+/* 가로 스크롤로 두면 화면 끝 문장이 잘려 보이고 마우스로는 넘길 수도 없어서, 넘치면 다음 줄로 내린다. */
 .quickReplies {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  margin: 0 calc(var(--space-4) * -1);
-  padding: 0 var(--space-4);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.quickReplies::-webkit-scrollbar {
-  display: none;
 }
 
 .quickReply {
-  flex: none;
+  max-width: 100%;
   min-height: 36px;
-  padding: 0 var(--space-3);
+  padding: 6px var(--space-3);
+  line-height: 1.4;
+  text-align: left;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-chip);
   background: var(--color-bg);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
-  white-space: nowrap;
   cursor: pointer;
 }
 
 .quickReply:hover {
   border-color: var(--color-primary);
   color: var(--color-primary-strong);
+}
+
+/* 상대가 나가서 더 보낼 수 없는 방 */
+.closed {
+  align-items: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.closedLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  color: var(--color-primary-strong);
+  font-weight: 700;
 }
 
 .sendError {
