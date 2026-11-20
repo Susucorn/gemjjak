@@ -101,6 +101,7 @@ export function compatibility(me, other) {
     commonGenres: commonGenres.map((key) => other.genres.get(key)),
     commonTags: commonTags.map((key) => other.tags.get(key)),
     overlapHours: overlap.length,
+    overlapText: overlapRange(overlap),
     reasons: buildReasons({
       commonGames: commonGames.map((key) => other.games.get(key)),
       commonGenres: commonGenres.map((key) => other.genres.get(key)),
@@ -116,11 +117,11 @@ function listNames(names, max = 2) {
 }
 
 /**
- * 겹치는 시간을 한 문장으로 줄인다.
+ * 겹치는 시간을 짧게 줄인다. 겹치는 시간이 없으면 null.
  * 요일마다 겹치는 시간대를 구해 가장 많은 요일에 나오는 시간대를 고른다.
- * 예: "월·수·금 20시–23시가 겹쳐요", 시간대가 제각각이면 "주 9시간 겹쳐요"
+ * 예: "월·수·금 20시–23시", 시간대가 제각각이면 "주 9시간"
  */
-export function describeOverlap(overlap) {
+export function overlapRange(overlap) {
   if (overlap.length === 0) return null
 
   const byDay = new Map()
@@ -138,11 +139,18 @@ export function describeOverlap(overlap) {
   }
   const [range, days] = [...daysByRange].sort((a, b) => b[1].length - a[1].length)[0]
 
-  if (days.length === 1 && byDay.size > 2) return `주 ${overlap.length}시간 겹쳐요`
+  if (days.length === 1 && byDay.size > 2) return `주 ${overlap.length}시간`
   const dayNames = DAYS.filter((item) => days.includes(item.key))
     .map((item) => item.label)
     .join('·')
-  return `${dayNames} ${range}가 겹쳐요`
+  return `${dayNames} ${range}`
+}
+
+/** overlapRange를 문장으로. 예: "월·수·금 20시–23시가 겹쳐요", "주 9시간 겹쳐요" */
+export function describeOverlap(overlap) {
+  const range = overlapRange(overlap)
+  if (!range) return null
+  return range.startsWith('주 ') ? `${range} 겹쳐요` : `${range}가 겹쳐요`
 }
 
 function buildReasons({ commonGames, commonGenres, commonTags, overlap }) {

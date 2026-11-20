@@ -96,7 +96,9 @@ export function MatchVisual() {
         )}
         match={{
           score: 95,
+          commonGames: ['원신'],
           commonTags: ['즐겜', '보이스OK'],
+          overlapText: '월·수·금 21시–23시',
           reasons: ['공통 게임 원신', '월·수·금 21시–23시가 겹쳐요'],
         }}
       />
@@ -111,12 +113,24 @@ export function RecommendVisual() {
       <MatchCard
         compact
         player={samplePlayer('칼바람장인', ['리그 오브 레전드'], ['즐겜', '보이스OK'])}
-        match={{ score: 88, commonTags: ['즐겜'], reasons: ['공통 게임 리그 오브 레전드'] }}
+        match={{
+          score: 88,
+          commonGames: ['리그 오브 레전드'],
+          commonTags: ['즐겜'],
+          overlapText: '토·일 20시–24시',
+          reasons: ['공통 게임 리그 오브 레전드'],
+        }}
       />
       <MatchCard
         compact
         player={samplePlayer('파도타기', ['원신', '명조'], ['즐겜', '월드 탐사'])}
-        match={{ score: 74, commonTags: ['월드 탐사'], reasons: ['화·목 20시–23시가 겹쳐요'] }}
+        match={{
+          score: 74,
+          commonGames: [],
+          commonTags: ['월드 탐사'],
+          overlapText: '화·목 20시–23시',
+          reasons: ['화·목 20시–23시가 겹쳐요'],
+        }}
       />
     </div>
   )

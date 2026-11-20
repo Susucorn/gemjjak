@@ -1,11 +1,10 @@
 import { useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { MatchCard } from '../components/match/MatchCard'
 import { Button } from '../components/ui/Button'
 import { useAuth } from '../hooks/useAuth'
 import { useLoader } from '../hooks/useLoader'
 import { rankPlayers } from '../lib/compatibility'
-import { newChatPath } from '../services/chatService'
 import { fetchPlayers } from '../services/matchService'
 import styles from './Home.module.css'
 
@@ -40,11 +39,8 @@ export function Home() {
 }
 
 function Recommendations({ me, others }) {
-  const navigate = useNavigate()
-  const chatProps = (player) => ({
-    onChat: () => navigate(newChatPath(player.id)),
-    profileTo: `/users/${player.id}`,
-  })
+  // 홈은 둘러보는 화면이라 [채팅하기]를 두지 않는다. 카드를 누르면 프로필에서 대화를 시작한다.
+  const profileTo = (player) => `/users/${player.id}`
 
   if (!me) {
     return (
@@ -90,7 +86,7 @@ function Recommendations({ me, others }) {
           <ul className={styles.carousel}>
             {today.map(({ player, match }) => (
               <li key={player.id} className={styles.carouselItem}>
-                <MatchCard player={player} match={match} {...chatProps(player)} />
+                <MatchCard player={player} match={match} profileTo={profileTo(player)} />
               </li>
             ))}
           </ul>
@@ -108,7 +104,7 @@ function Recommendations({ me, others }) {
           <ul className={styles.grid}>
             {similar.map(({ player, match }) => (
               <li key={player.id}>
-                <MatchCard player={player} match={match} compact {...chatProps(player)} />
+                <MatchCard player={player} match={match} compact profileTo={profileTo(player)} />
               </li>
             ))}
           </ul>
