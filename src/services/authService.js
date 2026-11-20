@@ -14,6 +14,16 @@ export async function signOut() {
   if (error) throw error
 }
 
+/**
+ * 회원 탈퇴. 계정과 프로필·취향·서버·채팅을 DB에서 모두 지운다(delete_my_account).
+ * 서버에는 이미 세션이 없으므로 브라우저에 남은 세션만 지운다.
+ */
+export async function deleteAccount() {
+  const { error } = await supabase.rpc('delete_my_account')
+  if (error) throw error
+  await supabase.auth.signOut({ scope: 'local' })
+}
+
 /** 디스코드로 가입한 계정인지. 구글 계정은 디스코드 표시를 하지 않는다. */
 export function isDiscordUser(user) {
   return (

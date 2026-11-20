@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Avatar } from '../components/ui/Avatar'
 import { Button } from '../components/ui/Button'
@@ -6,7 +6,7 @@ import { DiscordIcon } from '../components/ui/DiscordIcon'
 import { GameTile } from '../components/ui/GameTile'
 import { useAuth } from '../hooks/useAuth'
 import { useLoader } from '../hooks/useLoader'
-import { isDiscordUser, signOut } from '../services/authService'
+import { deleteAccount, isDiscordUser, signOut } from '../services/authService'
 import { fetchMyPreferences, fetchPreferenceOptions } from '../services/preferencesService'
 import {
   SERVER_STATUS_LABEL,
@@ -64,6 +64,46 @@ export function Profile() {
         </div>
       )}
       {loaded.status === 'ready' && <ProfileDetails {...loaded.data} />}
+
+      <DeleteAccount />
+    </div>
+  )
+}
+
+function DeleteAccount() {
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [error, setError] = useState(null)
+
+  async function handleDelete() {
+    const message =
+      '정말 탈퇴할까요?\n프로필, 게임·취향, 등록한 서버, 채팅이 모두 삭제되고 되돌릴 수 없어요.'
+    if (!window.confirm(message)) return
+    setError(null)
+    setIsDeleting(true)
+    try {
+      // 성공하면 세션이 사라져 가드가 로그인 화면으로 보낸다.
+      await deleteAccount()
+    } catch {
+      setError('탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.')
+      setIsDeleting(false)
+    }
+  }
+
+  return (
+    <div className={styles.deleteAccount}>
+      <button
+        type="button"
+        className={styles.deleteButton}
+        onClick={handleDelete}
+        disabled={isDeleting}
+      >
+        {isDeleting ? '탈퇴하는 중이에요' : '탈퇴하기'}
+      </button>
+      {error && (
+        <p className={styles.deleteError} role="alert">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

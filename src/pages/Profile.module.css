@@ -143,6 +143,37 @@
   background: var(--color-bg-subtle);
 }
 
+/* 탈퇴: 실수로 누르지 않도록 맨 아래에 눈에 덜 띄게 둔다. */
+.deleteAccount {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-4) 0 var(--space-6);
+}
+
+.deleteButton {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-4);
+  border: 0;
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.deleteButton:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.deleteError {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
 /* 활동 통계 */
 .stats {
   display: grid;
