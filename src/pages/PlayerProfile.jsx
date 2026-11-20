@@ -11,7 +11,7 @@ import { useLoader } from '../hooks/useLoader'
 import { WEIGHTS, compatibility } from '../lib/compatibility'
 import { newChatPath } from '../services/chatService'
 import { fetchPlayers } from '../services/matchService'
-import { fetchApprovedServersOf } from '../services/serverService'
+import { fetchApprovedServersOf, serverGameName } from '../services/serverService'
 import { DAYS, HOURS } from './onboarding/hours'
 import styles from './PlayerProfile.module.css'
 
@@ -218,7 +218,7 @@ function PlayerDetails({ me, player, catalog, servers, match }) {
                   <span className={styles.serverText}>
                     <strong>{server.name}</strong>
                     <span>
-                      {catalog.gameById.get(server.game_id)?.name ?? '여러 게임'}
+                      {serverGameName(server, catalog.gameById) ?? '여러 게임'}
                       {memberCount(server) > 0 && ` · 멤버 ${memberCount(server).toLocaleString()}`}
                     </span>
                   </span>

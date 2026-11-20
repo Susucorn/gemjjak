@@ -18,6 +18,7 @@ import {
 } from '../../services/serverService'
 import { fetchInviteInfo } from '../../services/discordInvite'
 import { EditScreen } from './EditScreen'
+import { GamePicker } from './GamePicker'
 import styles from './ProfileForms.module.css'
 
 /** /profile/servers/new, /profile/servers/:serverId */
@@ -62,7 +63,10 @@ function ServerFormFields({ games, server }) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [name, setName] = useState(server?.name ?? '')
-  const [gameId, setGameId] = useState(server?.game_id ?? null)
+  const [game, setGame] = useState({
+    gameId: server?.game_id ?? null,
+    customGame: server?.custom_game ?? null,
+  })
   const [inviteInput, setInviteInput] = useState(server?.invite_url ?? '')
   const [description, setDescription] = useState(server?.description ?? '')
   const [isSaving, setIsSaving] = useState(false)
@@ -82,7 +86,7 @@ function ServerFormFields({ games, server }) {
   async function handleSubmit() {
     setIsSaving(true)
     setSaveError(null)
-    const fields = { name, gameId, description, inviteUrl }
+    const fields = { name, ...game, description, inviteUrl }
     try {
       // 등록하면 바로 공개되므로 링크가 살아 있는지 디스코드에 먼저 물어본다.
       // 디스코드에 연결하지 못했을 때는 막지 않는다. 커뮤니티 카드가 만료 여부를 다시 보여 준다.
@@ -197,21 +201,18 @@ function ServerFormFields({ games, server }) {
           </span>
         </label>
 
-        <label className={styles.field}>
-          <span className={styles.label}>대표 게임</span>
-          <select
-            className={styles.input}
-            value={gameId ?? ''}
-            onChange={(event) => setGameId(event.target.value ? Number(event.target.value) : null)}
-          >
-            <option value="">여러 게임 / 선택 안 함</option>
-            {games.map((game) => (
-              <option key={game.id} value={game.id}>
-                {game.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className={styles.field}>
+          <span className={styles.label} aria-hidden="true">
+            대표 게임
+          </span>
+          <GamePicker
+            games={games}
+            initialText={
+              games.find((item) => item.id === server?.game_id)?.name ?? server?.custom_game ?? ''
+            }
+            onChange={setGame}
+          />
+        </div>
 
         <label className={styles.field}>
           <span className={styles.label}>소개</span>

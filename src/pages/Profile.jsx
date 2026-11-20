@@ -200,6 +200,7 @@ function ProfileDetails({ options, prefs, servers }) {
                       <span className={styles.serverName}>{server.name}</span>
                       <span className={styles.serverMeta}>
                         {options.games.find((game) => game.id === server.game_id)?.name ??
+                          server.custom_game ??
                           '여러 게임'}
                       </span>
                     </span>

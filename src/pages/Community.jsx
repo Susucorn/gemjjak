@@ -9,7 +9,7 @@ import { useLoader } from '../hooks/useLoader'
 import { supabase } from '../lib/supabaseClient'
 import { normalize } from './onboarding/gameSearch'
 import { fetchGames } from '../services/preferencesService'
-import { fetchCommunityServers } from '../services/serverService'
+import { fetchCommunityServers, serverGameName } from '../services/serverService'
 import styles from './Community.module.css'
 
 async function loadCommunity(userId) {
@@ -70,6 +70,7 @@ function matchesSearch(server, game, query) {
   if (!q) return true
   const labels = [server.name, server.description ?? '']
   if (game) labels.push(game.name, ...(game.aliases ?? []))
+  if (server.custom_game) labels.push(server.custom_game)
   return labels.some((label) => normalize(label).includes(q))
 }
 
@@ -165,7 +166,7 @@ function ServerBrowser({ servers, gameById, myGameIds, myId }) {
               <ServerCard
                 server={server}
                 info={infos.get(server.invite_url) ?? null}
-                gameName={gameById.get(server.game_id)?.name}
+                gameName={serverGameName(server, gameById)}
                 isMyGame={myGameIds.has(server.game_id)}
                 myId={myId}
               />

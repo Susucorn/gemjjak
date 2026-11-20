@@ -1,0 +1,126 @@
+.picker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ProfileForms.module.css의 .input과 같은 모양 */
+.input {
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-3) 44px var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.input:focus {
+  border-color: var(--color-primary-strong);
+  outline: 2px solid var(--color-primary-strong);
+  outline-offset: -1px;
+}
+
+/* 펼칠 수 있다는 표시(아래 화살표) */
+.chevron {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--color-text-secondary);
+  border-bottom: 2px solid var(--color-text-secondary);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.list {
+  position: absolute;
+  top: calc(48px + 6px);
+  right: 0;
+  left: 0;
+  z-index: 10;
+  max-height: 280px;
+  margin: 0;
+  padding: var(--space-1);
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--space-3);
+  background: var(--color-bg);
+  box-shadow: 0 8px 24px rgba(25, 31, 40, 0.12);
+  list-style: none;
+  overscroll-behavior: contain;
+}
+
+/* 얇은 둥근 스크롤 막대. 앱 강조색의 연한 톤을 쓴다.
+   Chrome은 scrollbar-color가 있으면 아래 ::-webkit-scrollbar 꾸밈을 무시하고 화살표를 그려서,
+   ::-webkit-scrollbar가 없는 브라우저(Firefox)에만 표준 속성을 준다. */
+@supports not selector(::-webkit-scrollbar) {
+  .list {
+    scrollbar-color: #c3c8fb transparent;
+    scrollbar-width: thin;
+  }
+}
+
+.list::-webkit-scrollbar-button {
+  display: none;
+}
+
+.list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.list::-webkit-scrollbar-track {
+  margin: var(--space-2) 0;
+  background: transparent;
+}
+
+.list::-webkit-scrollbar-thumb {
+  border: 2px solid var(--color-bg);
+  border-radius: 999px;
+  background: #c3c8fb;
+}
+
+.list::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border-radius: var(--space-2);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.option:hover,
+.active {
+  background: var(--color-bg-muted);
+}
+
+.selected {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+  font-weight: 700;
+}
+
+.selected:hover,
+.selected.active {
+  background: #dfe2fd;
+}
+
+.custom {
+  color: var(--color-primary-strong);
+  font-weight: 700;
+}
+
+.help {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}

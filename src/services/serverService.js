@@ -21,7 +21,7 @@ export function normalizeInviteUrl(input) {
   return match ? `https://discord.gg/${match[1]}` : null
 }
 
-const SERVER_COLUMNS = 'id, name, game_id, description, invite_url, status, created_at'
+const SERVER_COLUMNS = 'id, name, game_id, custom_game, description, invite_url, status, created_at'
 
 export async function fetchMyServers(userId) {
   const { data, error } = await supabase
@@ -45,10 +45,17 @@ export async function fetchMyServer(userId, serverId) {
   return data
 }
 
-function toRow({ name, gameId, description, inviteUrl }) {
+/** 서버의 대표 게임 이름. 목록 게임이면 그 이름, 직접 입력했으면 입력한 이름, 없으면 null */
+export function serverGameName(server, gameById) {
+  return gameById.get(server.game_id)?.name ?? server.custom_game ?? null
+}
+
+/** customGame: 목록에 없어 직접 입력한 게임 이름. gameId와 함께 오지 않는다. */
+function toRow({ name, gameId, customGame, description, inviteUrl }) {
   return {
     name: name.trim(),
     game_id: gameId,
+    custom_game: gameId ? null : customGame?.trim() || null,
     description: description.trim() || null,
     invite_url: inviteUrl,
   }
@@ -59,7 +66,6 @@ export async function createServer(userId, fields) {
   if (error) throw error
 }
 
-/** 초대 링크를 바꾸면 DB 트리거가 다시 '확인 중'으로 돌린다. */
 export async function updateServer(serverId, fields) {
   const { error } = await supabase.from('servers').update(toRow(fields)).eq('id', serverId)
   if (error) throw error
@@ -85,7 +91,7 @@ export async function fetchCommunityServers() {
   const { data, error } = await supabase
     .from('servers')
     .select(
-      'id, name, game_id, description, invite_url, member_count, online_count, status, owner_id, owner:profiles(nickname)',
+      'id, name, game_id, custom_game, description, invite_url, member_count, online_count, status, owner_id, owner:profiles(nickname)',
     )
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -96,7 +102,7 @@ export async function fetchCommunityServers() {
 export async function fetchApprovedServersOf(ownerId) {
   const { data, error } = await supabase
     .from('servers')
-    .select('id, name, game_id, description, invite_url, member_count, online_count')
+    .select('id, name, game_id, custom_game, description, invite_url, member_count, online_count')
     .eq('owner_id', ownerId)
     .eq('status', 'approved')
     .order('created_at')
