@@ -73,11 +73,17 @@ export function stepRequirement(step, prefs, vocabulary) {
   return totalHours(prefs.hours) === 0 ? '접속 시간을 1칸 이상 골라 주세요' : null
 }
 
-/** 게임 선택을 바꾸면 빠진 게임의 콘텐츠 태그가 남아 있을 수 있어 저장 직전에 걸러 낸다. */
+/**
+ * 게임 선택을 바꾸면 빠진 게임의 전용 콘텐츠 태그가 남아 있을 수 있어 저장 직전에 걸러 낸다.
+ * 공통 콘텐츠 태그(game_id 없음)는 어떤 게임이든 남긴다.
+ */
 export function tagsToSave(prefs, vocabulary) {
   const validTags = new Set(
     vocabulary
-      .filter((item) => item.category !== 'activity' || prefs.gameIds.has(item.game_id))
+      .filter(
+        (item) =>
+          item.category !== 'activity' || item.game_id == null || prefs.gameIds.has(item.game_id),
+      )
       .map((item) => item.tag),
   )
   return [...prefs.tags].filter((tag) => validTags.has(tag))

@@ -17,7 +17,10 @@ export async function fetchGenres() {
   return data
 }
 
-/** category: 'style' | 'activity' | 'want'. activity 태그는 game_id로 게임에 묶여 있다. */
+/**
+ * category: 'style' | 'activity' | 'want'.
+ * activity 태그는 대부분 공통(game_id null)이고, game_id가 있으면 그 게임을 골랐을 때만 보인다.
+ */
 export async function fetchTagVocabulary() {
   const { data, error } = await supabase
     .from('tag_vocabulary')

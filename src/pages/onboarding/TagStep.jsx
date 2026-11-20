@@ -84,13 +84,13 @@ export function TagStep({
   // 지금 열려 있는 입력 창: 'genre' | 'style' | 'activity' | 'want' | null
   const [adding, setAdding] = useState(null)
 
-  // 콘텐츠 태그는 고른 게임의 것만 보여 준다.
+  // 콘텐츠 태그는 공통 태그(game_id 없음)와, 게임 전용 태그가 있다면 고른 게임의 것만 보여 준다.
   const optionsOf = (category) =>
     uniqueTags(
       vocabulary,
       (item) =>
         item.category === category &&
-        (category !== 'activity' || selectedGameIds.has(item.game_id)),
+        (category !== 'activity' || item.game_id == null || selectedGameIds.has(item.game_id)),
     )
 
   // 입력한 장르가 기존 장르와 같으면 그 장르를 고른다.
