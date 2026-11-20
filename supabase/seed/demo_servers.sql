@@ -8,8 +8,8 @@
 --     select 'https://discord.gg/' || code from unnest(array[
 --       'leagueoflegends','valorant','genshinimpact','lostark','minecraft']) as code);
 
-insert into public.servers (name, game_id, description, invite_url, status)
-select v.name, g.id, v.description, 'https://discord.gg/' || v.code, 'approved'
+insert into public.servers (name, game_ids, description, invite_url, status)
+select v.name, array[g.id], v.description, 'https://discord.gg/' || v.code, 'approved'
 from (values
   ('League of Legends', '리그 오브 레전드', 'leagueoflegends', '라이엇 게임즈 공식 롤 서버예요. 패치 소식을 보고 같이 할 사람을 구할 수 있어요.'),
   ('VALORANT', '발로란트', 'valorant', '발로란트 공식 서버예요. 듀오·파티원 구하기 채널이 있어요.'),

@@ -9,21 +9,40 @@ import { useLoader } from '../hooks/useLoader'
 import { supabase } from '../lib/supabaseClient'
 import { normalize } from './onboarding/gameSearch'
 import { fetchGames } from '../services/preferencesService'
-import { fetchCommunityServers, serverGameName } from '../services/serverService'
+import { fetchCommunityServers } from '../services/serverService'
 import styles from './Community.module.css'
 
 async function loadCommunity(userId) {
-  const [servers, games, myGames] = await Promise.all([
+  const [servers, games, myGames, myCustomGames] = await Promise.all([
     fetchCommunityServers(),
     fetchGames(),
     supabase.from('user_games').select('game_id').eq('user_id', userId),
+    supabase.from('user_custom_games').select('name').eq('user_id', userId),
   ])
   if (myGames.error) throw myGames.error
+  if (myCustomGames.error) throw myCustomGames.error
   return {
     servers,
     gameById: new Map(games.map((game) => [game.id, game])),
-    myGameIds: new Set(myGames.data.map((row) => row.game_id)),
+    myGames: {
+      ids: new Set(myGames.data.map((row) => row.game_id)),
+      // 직접 입력한 게임끼리는 정규화한 이름으로 같은지 본다.
+      customKeys: new Set(myCustomGames.data.map((row) => normalize(row.name))),
+    },
   }
+}
+
+/** 서버의 대표 게임을 { name, mine } 목록으로. 목록 게임 다음에 직접 입력한 게임이 온다. */
+function serverGames(server, gameById, myGames) {
+  return [
+    ...server.game_ids
+      .filter((id) => gameById.has(id))
+      .map((id) => ({ name: gameById.get(id).name, mine: myGames.ids.has(id) })),
+    ...server.custom_games.map((name) => ({
+      name,
+      mine: myGames.customKeys.has(normalize(name)),
+    })),
+  ]
 }
 
 /** /community — 게임별 디스코드 서버를 둘러보고 참여한다. */
@@ -62,19 +81,21 @@ export function Community() {
 }
 
 /**
- * 서버 이름·설명·게임 이름·게임 별명에서 찾는다. 띄어쓰기·대소문자는 무시한다.
+ * 서버 이름·설명·대표 게임 이름·게임 별명에서 찾는다. 띄어쓰기·대소문자는 무시한다.
  * 별명까지 보므로 '배그'로 배틀그라운드 서버를, '로아'로 로스트아크 서버를 찾는다.
  */
-function matchesSearch(server, game, query) {
+function matchesSearch(server, gameById, query) {
   const q = normalize(query)
   if (!q) return true
-  const labels = [server.name, server.description ?? '']
-  if (game) labels.push(game.name, ...(game.aliases ?? []))
-  if (server.custom_game) labels.push(server.custom_game)
+  const labels = [server.name, server.description ?? '', ...server.custom_games]
+  for (const id of server.game_ids) {
+    const game = gameById.get(id)
+    if (game) labels.push(game.name, ...(game.aliases ?? []))
+  }
   return labels.some((label) => normalize(label).includes(q))
 }
 
-function ServerBrowser({ servers, gameById, myGameIds, myId }) {
+function ServerBrowser({ servers, gameById, myGames, myId }) {
   const [query, setQuery] = useState('')
   const [onlyMine, setOnlyMine] = useState(false)
 
@@ -82,7 +103,9 @@ function ServerBrowser({ servers, gameById, myGameIds, myId }) {
   const myHidden = servers.filter(
     (server) => server.owner_id === myId && server.status !== 'approved',
   )
-  const hasMine = approved.some((server) => myGameIds.has(server.game_id))
+  const gamesOf = (server) => serverGames(server, gameById, myGames)
+  const isMine = (server) => gamesOf(server).some((game) => game.mine)
+  const hasMine = approved.some(isMine)
 
   // 인원은 DB에 저장되지 않아 디스코드에서 실시간으로 받아 온다.
   const { infos, done } = useInviteInfos(approved.map((server) => server.invite_url))
@@ -96,13 +119,10 @@ function ServerBrowser({ servers, gameById, myGameIds, myId }) {
   }
 
   const visible = approved
-    .filter((server) => !onlyMine || myGameIds.has(server.game_id))
-    .filter((server) => matchesSearch(server, gameById.get(server.game_id), query))
+    .filter((server) => !onlyMine || isMine(server))
+    .filter((server) => matchesSearch(server, gameById, query))
     // 내 게임 서버를 먼저, 그다음 사람이 많은 순
-    .sort(
-      (a, b) =>
-        Number(myGameIds.has(b.game_id)) - Number(myGameIds.has(a.game_id)) || rank(b) - rank(a),
-    )
+    .sort((a, b) => Number(isMine(b)) - Number(isMine(a)) || rank(b) - rank(a))
   const searching = query.trim() !== '' || onlyMine
 
   return (
@@ -166,8 +186,7 @@ function ServerBrowser({ servers, gameById, myGameIds, myId }) {
               <ServerCard
                 server={server}
                 info={infos.get(server.invite_url) ?? null}
-                gameName={serverGameName(server, gameById)}
-                isMyGame={myGameIds.has(server.game_id)}
+                games={gamesOf(server)}
                 myId={myId}
               />
             </li>
@@ -202,7 +221,8 @@ function formatCount(count) {
 }
 
 /** info: 디스코드에서 받은 아이콘·인원. 아직 없거나 실패하면 null이고, 그때는 DB 값을 쓴다. */
-function ServerCard({ server, info, gameName, isMyGame, myId }) {
+/** games: 대표 게임 { name, mine } 목록. 3개까지 칩으로 보여 주고 나머지는 개수만 적는다. */
+function ServerCard({ server, info, games, myId }) {
   const expired = info?.valid === false
   const members = info?.members ?? (server.member_count || null)
   const online = info?.online ?? (server.online_count || null)
@@ -220,9 +240,12 @@ function ServerCard({ server, info, gameName, isMyGame, myId }) {
         <div className={styles.cardTitle}>
           <h2 className={styles.name}>{server.name}</h2>
           <p className={styles.meta}>
-            {gameName && (
-              <span className={isMyGame ? styles.gameMine : styles.game}>{gameName}</span>
-            )}
+            {games.slice(0, 3).map((game) => (
+              <span key={game.name} className={game.mine ? styles.gameMine : styles.game}>
+                {game.name}
+              </span>
+            ))}
+            {games.length > 3 && <span>외 {games.length - 3}개</span>}
             {server.owner ? (
               server.owner_id === myId ? (
                 <span>내가 등록</span>

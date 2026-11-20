@@ -21,7 +21,8 @@ export function normalizeInviteUrl(input) {
   return match ? `https://discord.gg/${match[1]}` : null
 }
 
-const SERVER_COLUMNS = 'id, name, game_id, custom_game, description, invite_url, status, created_at'
+const SERVER_COLUMNS =
+  'id, name, game_ids, custom_games, description, invite_url, status, created_at'
 
 export async function fetchMyServers(userId) {
   const { data, error } = await supabase
@@ -45,17 +46,31 @@ export async function fetchMyServer(userId, serverId) {
   return data
 }
 
-/** 서버의 대표 게임 이름. 목록 게임이면 그 이름, 직접 입력했으면 입력한 이름, 없으면 null */
-export function serverGameName(server, gameById) {
-  return gameById.get(server.game_id)?.name ?? server.custom_game ?? null
+/** 서버 대표 게임은 목록 게임과 직접 입력한 게임을 합쳐 이 개수까지 고른다. */
+export const MAX_SERVER_GAMES = 10
+
+/**
+ * 서버의 대표 게임 이름 목록. 목록에서 고른 게임 다음에 직접 입력한 게임이 온다.
+ * 비어 있으면 "여러 게임"으로 보여 준다.
+ */
+export function serverGameNames(server, gameById) {
+  const listed = (server.game_ids ?? []).map((id) => gameById.get(id)?.name).filter(Boolean)
+  return [...listed, ...(server.custom_games ?? [])]
 }
 
-/** customGame: 목록에 없어 직접 입력한 게임 이름. gameId와 함께 오지 않는다. */
-function toRow({ name, gameId, customGame, description, inviteUrl }) {
+/** 목록 한 줄용: "원신, 리그 오브 레전드 외 2개", 비어 있으면 "여러 게임" */
+export function gameListText(names, max = 2) {
+  if (names.length === 0) return '여러 게임'
+  const shown = names.slice(0, max).join(', ')
+  return names.length > max ? `${shown} 외 ${names.length - max}개` : shown
+}
+
+/** gameIds: 목록에서 고른 게임 id 배열, customGames: 직접 입력한 게임 이름 배열 */
+function toRow({ name, gameIds, customGames, description, inviteUrl }) {
   return {
     name: name.trim(),
-    game_id: gameId,
-    custom_game: gameId ? null : customGame?.trim() || null,
+    game_ids: gameIds,
+    custom_games: customGames.map((game) => game.trim()).filter(Boolean),
     description: description.trim() || null,
     invite_url: inviteUrl,
   }
@@ -91,7 +106,7 @@ export async function fetchCommunityServers() {
   const { data, error } = await supabase
     .from('servers')
     .select(
-      'id, name, game_id, custom_game, description, invite_url, member_count, online_count, status, owner_id, owner:profiles(nickname)',
+      'id, name, game_ids, custom_games, description, invite_url, member_count, online_count, status, owner_id, owner:profiles(nickname)',
     )
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -102,7 +117,7 @@ export async function fetchCommunityServers() {
 export async function fetchApprovedServersOf(ownerId) {
   const { data, error } = await supabase
     .from('servers')
-    .select('id, name, game_id, custom_game, description, invite_url, member_count, online_count')
+    .select('id, name, game_ids, custom_games, description, invite_url, member_count, online_count')
     .eq('owner_id', ownerId)
     .eq('status', 'approved')
     .order('created_at')

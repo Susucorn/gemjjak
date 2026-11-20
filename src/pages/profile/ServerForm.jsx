@@ -64,8 +64,8 @@ function ServerFormFields({ games, server }) {
   const { user } = useAuth()
   const [name, setName] = useState(server?.name ?? '')
   const [game, setGame] = useState({
-    gameId: server?.game_id ?? null,
-    customGame: server?.custom_game ?? null,
+    gameIds: server?.game_ids ?? [],
+    customGames: server?.custom_games ?? [],
   })
   const [inviteInput, setInviteInput] = useState(server?.invite_url ?? '')
   const [description, setDescription] = useState(server?.description ?? '')
@@ -207,9 +207,8 @@ function ServerFormFields({ games, server }) {
           </span>
           <GamePicker
             games={games}
-            initialText={
-              games.find((item) => item.id === server?.game_id)?.name ?? server?.custom_game ?? ''
-            }
+            initialGameIds={server?.game_ids ?? []}
+            initialCustomGames={server?.custom_games ?? []}
             onChange={setGame}
           />
         </div>

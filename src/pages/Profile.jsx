@@ -8,7 +8,12 @@ import { useAuth } from '../hooks/useAuth'
 import { useLoader } from '../hooks/useLoader'
 import { isDiscordUser, signOut } from '../services/authService'
 import { fetchMyPreferences, fetchPreferenceOptions } from '../services/preferencesService'
-import { SERVER_STATUS_LABEL, fetchMyServers } from '../services/serverService'
+import {
+  SERVER_STATUS_LABEL,
+  fetchMyServers,
+  gameListText,
+  serverGameNames,
+} from '../services/serverService'
 import { DAYS, HOURS, describeHours, totalHours } from './onboarding/hours'
 import styles from './Profile.module.css'
 
@@ -94,11 +99,7 @@ function ProfileHeader({ user, profile }) {
         <Link to="/profile/edit/info" className={styles.editProfile}>
           프로필 수정
         </Link>
-        <button
-          type="button"
-          className={styles.signOut}
-          onClick={() => signOut().catch(() => {})}
-        >
+        <button type="button" className={styles.signOut} onClick={() => signOut().catch(() => {})}>
           로그아웃
         </button>
       </div>
@@ -108,6 +109,7 @@ function ProfileHeader({ user, profile }) {
 
 function ProfileDetails({ options, prefs, servers }) {
   const genreNameById = new Map(options.genres.map((genre) => [genre.id, genre.name]))
+  const gameById = new Map(options.games.map((game) => [game.id, game]))
   const myGames = options.games.filter((game) => prefs.gameIds.has(game.id))
   const myGenres = options.genres.filter((genre) => prefs.genreIds.has(genre.id))
   const categoryOf = new Map(options.vocabulary.map((item) => [item.tag, item.category]))
@@ -199,9 +201,7 @@ function ProfileDetails({ options, prefs, servers }) {
                     <span className={styles.serverText}>
                       <span className={styles.serverName}>{server.name}</span>
                       <span className={styles.serverMeta}>
-                        {options.games.find((game) => game.id === server.game_id)?.name ??
-                          server.custom_game ??
-                          '여러 게임'}
+                        {gameListText(serverGameNames(server, gameById))}
                       </span>
                     </span>
                     <span className={`${styles.statusBadge} ${styles[server.status]}`}>
