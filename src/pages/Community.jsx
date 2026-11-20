@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Chip } from '../components/ui/Chip'
 import { DiscordIcon } from '../components/ui/DiscordIcon'
 import { useAuth } from '../hooks/useAuth'
+import { useInviteInfos } from '../hooks/useInviteInfos'
 import { useLoader } from '../hooks/useLoader'
 import { supabase } from '../lib/supabaseClient'
-import { fetchInviteInfo } from '../services/discordInvite'
 import { normalize } from './onboarding/gameSearch'
 import { fetchGames } from '../services/preferencesService'
 import { fetchCommunityServers } from '../services/serverService'
@@ -83,14 +83,24 @@ function ServerBrowser({ servers, gameById, myGameIds, myId }) {
   )
   const hasMine = approved.some((server) => myGameIds.has(server.game_id))
 
+  // 인원은 DB에 저장되지 않아 디스코드에서 실시간으로 받아 온다.
+  const { infos, done } = useInviteInfos(approved.map((server) => server.invite_url))
+  // 정렬용 인원. 응답이 모두 오기 전에는 0으로 두어, 카드 순서가 한 번만 바뀌게 한다.
+  // 만료된 링크는 참여할 수 없으니 맨 뒤로 보낸다.
+  const rank = (server) => {
+    if (!done) return 0
+    const info = infos.get(server.invite_url)
+    if (info?.valid === false) return -1
+    return info?.members ?? server.member_count
+  }
+
   const visible = approved
     .filter((server) => !onlyMine || myGameIds.has(server.game_id))
     .filter((server) => matchesSearch(server, gameById.get(server.game_id), query))
     // 내 게임 서버를 먼저, 그다음 사람이 많은 순
     .sort(
       (a, b) =>
-        Number(myGameIds.has(b.game_id)) - Number(myGameIds.has(a.game_id)) ||
-        b.member_count - a.member_count,
+        Number(myGameIds.has(b.game_id)) - Number(myGameIds.has(a.game_id)) || rank(b) - rank(a),
     )
   const searching = query.trim() !== '' || onlyMine
 
@@ -154,6 +164,7 @@ function ServerBrowser({ servers, gameById, myGameIds, myId }) {
             <li key={server.id}>
               <ServerCard
                 server={server}
+                info={infos.get(server.invite_url) ?? null}
                 gameName={gameById.get(server.game_id)?.name}
                 isMyGame={myGameIds.has(server.game_id)}
                 myId={myId}
@@ -184,30 +195,13 @@ function SearchIcon() {
   )
 }
 
-/** 디스코드에서 아이콘과 인원을 불러온다. 실패하면 DB에 저장된 값을 쓴다. */
-function useInviteInfo(inviteUrl) {
-  const [state, setState] = useState({ url: null, info: null })
-
-  useEffect(() => {
-    let cancelled = false
-    fetchInviteInfo(inviteUrl)
-      .then((info) => !cancelled && setState({ url: inviteUrl, info }))
-      .catch(() => !cancelled && setState({ url: inviteUrl, info: null }))
-    return () => {
-      cancelled = true
-    }
-  }, [inviteUrl])
-
-  return state.url === inviteUrl ? state.info : null
-}
-
 function formatCount(count) {
   if (count >= 10000) return `${(count / 10000).toFixed(count >= 100000 ? 0 : 1)}만`
   return count.toLocaleString()
 }
 
-function ServerCard({ server, gameName, isMyGame, myId }) {
-  const info = useInviteInfo(server.invite_url)
+/** info: 디스코드에서 받은 아이콘·인원. 아직 없거나 실패하면 null이고, 그때는 DB 값을 쓴다. */
+function ServerCard({ server, info, gameName, isMyGame, myId }) {
   const expired = info?.valid === false
   const members = info?.members ?? (server.member_count || null)
   const online = info?.online ?? (server.online_count || null)

@@ -50,17 +50,18 @@ function buildSystemPrompt(context: {
   games: string[]
   genres: string[]
   tags: string[]
-  customNames: string[]
+  customGames: string[]
+  customTags: string[]
 }): string {
   return `너는 게임 친구 매칭 서비스 "겜짝"의 검색 도우미다. 사용자가 어떤 게임 친구를 찾는지 한국어로 적으면, 그 문장을 탐색 필터로 바꾼다.
 
 필드
 - games: 같이 할 게임. 아래 게임 목록에 같은 게임이 있으면 목록의 이름을 그대로 쓴다(별명·줄임말 포함: "롤" → "리그 오브 레전드"). 목록에 없으면 사용자가 쓴 이름을 쓴다.
 - genres: 게임 대신 장르를 말했을 때만 채운다. 장르 목록의 이름을 쓴다.
-- tags: 플레이 스타일, 하는 콘텐츠, 원하는 사람의 특징. 태그 목록에서 뜻이 같은 것을 고른다("빡겜" → 목록의 비슷한 태그). 목록에 없으면 짧은 단어로 쓴다.
+- tags: 플레이 스타일, 하는 콘텐츠, 원하는 사람의 특징. 태그 목록이나 "다른 사용자가 직접 입력한 태그" 목록에서 뜻이 같은 것을 골라 그 이름을 그대로 쓴다("빡겜" → 목록의 비슷한 태그). 두 목록 어디에도 맞는 것이 없으면 새로 만들지 말고 비워 둔다. 모든 조건을 동시에 만족하는 사람만 찾으므로 없는 태그를 넣으면 결과가 0명이 된다.
 - weekdays: ISO 요일 번호(1=월 … 7=일). 평일은 1~5, 주말은 6과 7. "오늘", "내일"은 현재 요일 기준으로 계산한다.
 - hours: 접속 시각(0~23). 숫자 하나는 그 시각부터 1시간이다. 새벽 0~5, 아침 6~8, 오전 6~11, 점심 11~13, 오후 12~17, 저녁 18~21, 밤 20~23, 늦은 밤 22~23과 0~1. "지금"은 현재 시각과 다음 시각이다.
-- summary: 이해한 조건을 한국어 한 문장으로 요약한다. 예: "주말 저녁에 리그 오브 레전드를 즐겜으로 할 사람을 찾을게요."
+- summary: 이해한 조건을 한국어 한 문장으로 요약한다. 필드에 넣지 않은 조건은 요약에도 쓰지 않는다. 예: "주말 저녁에 리그 오브 레전드를 즐겜으로 할 사람을 찾을게요."
 
 규칙
 - 문장에 없는 조건은 빈 배열로 둔다. 추측해서 채우지 않는다.
@@ -76,8 +77,11 @@ ${context.genres.join(', ')}
 태그 목록
 ${context.tags.join(', ')}
 
-다른 사용자가 직접 입력한 게임·태그 이름
-${context.customNames.join(', ') || '(없음)'}`
+다른 사용자가 직접 입력한 게임
+${context.customGames.join(', ') || '(없음)'}
+
+다른 사용자가 직접 입력한 태그
+${context.customTags.join(', ') || '(없음)'}`
 }
 
 function cleanNames(value: unknown): string[] {
@@ -97,12 +101,21 @@ function cleanNumbers(value: unknown, min: number, max: number): number[] {
   return [...new Set(numbers)].sort((a, b) => a - b)
 }
 
-/** Claude 출력이 스키마를 지켜도 값 범위는 서버에서 다시 확인한다. */
-function cleanConditions(raw: Record<string, unknown>): SearchConditions {
+/** 대소문자·띄어쓰기·기호를 무시한 비교용 이름. 브라우저 gameSearch.js의 normalize와 같은 규칙이다. */
+function normalize(text: string): string {
+  return text.toLowerCase().replace(/[\s:·\-_.,!?'"]/g, '')
+}
+
+/**
+ * Claude 출력이 스키마를 지켜도 값 범위는 서버에서 다시 확인한다.
+ * 태그는 실제로 쓰이는 이름(knownTags, 정규화한 값)만 남긴다.
+ * 탐색은 모든 조건을 동시에 만족해야 하므로, 아무도 갖지 않은 태그 하나가 결과를 0명으로 만들기 때문이다.
+ */
+function cleanConditions(raw: Record<string, unknown>, knownTags: Set<string>): SearchConditions {
   return {
     games: cleanNames(raw.games),
     genres: cleanNames(raw.genres),
-    tags: cleanNames(raw.tags),
+    tags: cleanNames(raw.tags).filter((tag) => knownTags.has(normalize(tag))),
     weekdays: cleanNumbers(raw.weekdays, 1, 7),
     hours: cleanNumbers(raw.hours, 0, 23),
     summary: typeof raw.summary === 'string' ? raw.summary.trim().slice(0, 200) : '',
@@ -140,15 +153,18 @@ export default {
     const failed = [games, genres, vocabulary, customGames, customTags].find((r) => r.error)
     if (failed) return errorResponse(500, 'catalog_unavailable')
 
+    const tagNames = [...new Set(vocabulary.data!.map((row) => row.tag))]
+    const customTagNames = [...new Set(customTags.data!.map((row) => row.name))]
+    const knownTags = new Set([...tagNames, ...customTagNames].map(normalize))
+
     const system = buildSystemPrompt({
       games: games.data!.map((game) =>
         game.aliases?.length ? `${game.name}: ${game.aliases.join(', ')}` : game.name,
       ),
       genres: genres.data!.map((genre) => genre.name),
-      tags: [...new Set(vocabulary.data!.map((row) => row.tag))],
-      customNames: [
-        ...new Set([...customGames.data!, ...customTags.data!].map((row) => row.name)),
-      ],
+      tags: tagNames,
+      customGames: [...new Set(customGames.data!.map((row) => row.name))],
+      customTags: customTagNames,
     })
 
     const now = getSeoulNow()
@@ -208,7 +224,7 @@ export default {
     // 답을 받은 뒤에만 1회를 쓴다. 동시에 두 번 눌러 한도를 넘었더라도 이미 받은 답은 돌려준다.
     const consumed = await ctx.supabase.rpc('consume_ai_search')
     return Response.json({
-      conditions: cleanConditions(raw as Record<string, unknown>),
+      conditions: cleanConditions(raw as Record<string, unknown>, knownTags),
       remaining: consumed.error ? 0 : consumed.data,
     })
   }),

@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button'
 import { DiscordIcon } from '../components/ui/DiscordIcon'
 import { GameTile } from '../components/ui/GameTile'
 import { useAuth } from '../hooks/useAuth'
+import { useInviteInfos } from '../hooks/useInviteInfos'
 import { useLoader } from '../hooks/useLoader'
 import { WEIGHTS, compatibility } from '../lib/compatibility'
 import { newChatPath } from '../services/chatService'
@@ -91,6 +92,9 @@ const PART_LABELS = [
 
 function PlayerDetails({ me, player, catalog, servers, match }) {
   const navigate = useNavigate()
+  // 서버 인원은 DB에 저장되지 않아 디스코드에서 받아 온다. 못 받으면 표시하지 않는다.
+  const { infos } = useInviteInfos(servers.map((server) => server.invite_url))
+  const memberCount = (server) => infos.get(server.invite_url)?.members ?? server.member_count
 
   const commonGames = new Set(match?.commonGames ?? [])
   const commonGenres = new Set(match?.commonGenres ?? [])
@@ -215,7 +219,7 @@ function PlayerDetails({ me, player, catalog, servers, match }) {
                     <strong>{server.name}</strong>
                     <span>
                       {catalog.gameById.get(server.game_id)?.name ?? '여러 게임'}
-                      {server.member_count > 0 && ` · 멤버 ${server.member_count.toLocaleString()}`}
+                      {memberCount(server) > 0 && ` · 멤버 ${memberCount(server).toLocaleString()}`}
                     </span>
                   </span>
                   <a
