@@ -168,11 +168,11 @@ function Conversation({ room, messages: initialMessages, match, myId, onActivity
   // 방에 들어오면 읽음 처리하고, 상대 메시지가 새로 오면 다시 읽음 처리한다.
   useEffect(() => {
     if (!room.roomId) return undefined
-    markRead(room.roomId, myId).then(onActivity, () => {})
+    markRead(room.roomId).then(onActivity, () => {})
     return subscribeToMessages((message) => {
       addMessage(message)
       if (message.kind === 'leave') setOtherLeft(true)
-      if (message.sender_id !== myId) markRead(room.roomId, myId).then(onActivity, () => {})
+      if (message.sender_id !== myId) markRead(room.roomId).then(onActivity, () => {})
     }, room.roomId)
   }, [room.roomId, myId, addMessage, onActivity])
 

@@ -105,13 +105,12 @@ export async function sendMessage(roomId, content) {
   return data
 }
 
-/** 이 방의 메시지를 지금까지 읽은 것으로 표시한다. */
-export async function markRead(roomId, myId) {
-  const { error } = await supabase
-    .from('chat_members')
-    .update({ last_read_at: new Date().toISOString() })
-    .eq('room_id', roomId)
-    .eq('user_id', myId)
+/**
+ * 이 방의 메시지를 지금까지 읽은 것으로 표시한다.
+ * 시각은 DB가 정한다. 브라우저 시계가 틀려도 새 메시지를 읽음으로 잘못 처리하지 않는다.
+ */
+export async function markRead(roomId) {
+  const { error } = await supabase.rpc('mark_chat_read', { p_room_id: roomId })
   if (error) throw error
 }
 
